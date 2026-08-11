@@ -80,6 +80,7 @@ const firebaseConfig = {
    ========================================================================== */
 
 const state = {
+repeatOne: false,
   player: null,
   playerReady: false,
   isPlaying: false,
@@ -103,6 +104,7 @@ const state = {
 const el = {};
 
 function cacheDom() {
+  el.repeatBtn = document.getElementById("repeatBtn");
   el.clock = document.getElementById("clock");
   el.onlinePill = document.getElementById("onlinePill");
   el.onlineCount = document.getElementById("onlineCount");
@@ -130,6 +132,8 @@ function cacheDom() {
   el.progressHandle = document.getElementById("progressHandle");
 
   el.prevBtn = document.getElementById("prevBtn");
+  el.seekBackBtn = document.getElementById("seekBackBtn");
+  el.seekForwardBtn = document.getElementById("seekForwardBtn");
   el.playBtn = document.getElementById("playBtn");
   el.nextBtn = document.getElementById("nextBtn");
   el.iconPlay = document.getElementById("iconPlay");
@@ -519,7 +523,12 @@ function handlePlayerStateChange(event) {
       refreshMetadataWithRetry();
       break;
 
-    case YTState.ENDED:
+case YTState.ENDED:
+      if (state.repeatOne) {
+        state.player.seekTo(0, true);
+        state.player.playVideo();
+        break;
+      }
       // The playlist auto-advances on its own; this just keeps our UI in
       // sync in case the next video's metadata hasn't fired a CUED event.
       state.isPlaying = false;
@@ -597,11 +606,27 @@ setAlbumArtwork(data.video_id);
 /* ==========================================================================
    12. PLAYBACK CONTROLS
    ========================================================================== */
-
 function initControls() {
   el.playBtn.addEventListener("click", togglePlayPause);
   el.prevBtn.addEventListener("click", playPrevious);
   el.nextBtn.addEventListener("click", playNext);
+  el.seekBackBtn.addEventListener("click", () => seekRelative(-5));
+  el.seekForwardBtn.addEventListener("click", () => seekRelative(5));
+  el.repeatBtn.addEventListener("click", toggleRepeat);
+}
+
+function toggleRepeat() {
+  state.repeatOne = !state.repeatOne;
+  el.repeatBtn.classList.toggle("is-active", state.repeatOne);
+  el.repeatBtn.setAttribute("aria-pressed", String(state.repeatOne));
+  el.repeatBtn.setAttribute("aria-label", state.repeatOne ? "Repeat on" : "Repeat off");
+  el.repeatBtn.title = state.repeatOne ? "Repeat: on" : "Repeat: off";
+}
+
+function seekRelative(deltaSeconds) {
+  if (!state.player || !state.player.getCurrentTime) return;
+  const current = state.player.getCurrentTime() || 0;
+  seekTo(Math.max(0, Math.min(state.duration, current + deltaSeconds)));
 }
 
 function togglePlayPause() {

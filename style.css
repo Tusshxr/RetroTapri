@@ -534,6 +534,27 @@ img {
   opacity: 0.85;
   transition: opacity 160ms ease, transform 160ms ease, background 160ms ease;
 }
+.seek-btn {
+  position: relative;
+}
+
+.seek-label {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  background: var(--color-charcoal);
+  color: var(--text-primary);
+  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
 
 .ctrl-btn:hover {
   opacity: 1;
@@ -617,6 +638,12 @@ img {
 
 .queue-btn.is-active {
   background: rgba(255, 255, 255, 0.14);
+  opacity: 1;
+}
+
+.repeat-btn.is-active {
+  background: rgba(227, 169, 76, 0.16);
+  color: var(--color-gold);
   opacity: 1;
 }
 
