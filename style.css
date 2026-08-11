@@ -421,9 +421,8 @@ img {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 4px;
 }
-
 .track-meta {
   min-width: 0;
 }
@@ -452,7 +451,9 @@ img {
 .progress-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  margin-top: 6px;
+  width: 100%;
 }
 
 .time-label {
@@ -481,17 +482,17 @@ img {
   position: absolute;
   left: 0;
   right: 0;
-  height: 4px;
-  border-radius: 4px;
-  background: rgba(248, 241, 228, 0.18);
+  height: 5px;
+  border-radius: 5px;
+  background: rgba(248, 241, 228, 0.28);
 }
 
 .progress-fill {
   position: absolute;
   left: 0;
-  height: 4px;
+  height: 5px;
   width: 0%;
-  border-radius: 4px;
+  border-radius: 5px;
   background: var(--progress-color);
   transition: width 120ms linear;
 }
