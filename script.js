@@ -26,7 +26,7 @@
 const CONFIG = {
   // Paste a YouTube playlist ID here (the part after "list=" in a playlist
   // URL). Example: https://www.youtube.com/playlist?list=PLxxxxxxxxxxxx
-  playlistId: "PLcrE2_0C5h0wplMKN7ZvNJpwSuj-H0Y-C",
+ playlistId: "PLcrE2_0C5h0wplMKN7ZvNJpwSuj-H0Y-C",
 
   // Devanagari (or any) title rendered large in the background. Set
   // showHeroTitle to false to disable it entirely.
@@ -34,7 +34,7 @@ const CONFIG = {
   showHeroTitle: true,
 
   // External service links, opened in a new tab.
-  spotifyUrl: "https://open.spotify.com/",
+  spotifyUrl: "https://open.spotify.com/playlist/03PTAasbZO4zn3BjmykF5V?si=B92tJmDzQi2iKhJlGZnpIw&utm_source=whatsapp&pi=RoxoJS5KRYivB&sci=spotify%3Acard-config%3A4LEZcscsXVoFDGDBVvOIGI&nd=1&dlsi=3821a940b52b40f7",
   youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLcrE2_0C5h0wplMKN7ZvNJpwSuj-H0Y-C",
 
   // "Online" pill in the top right. Backed by real Firebase presence
@@ -416,16 +416,16 @@ function createYouTubePlayer() {
     height: "1",
     width: "1",
     playerVars: {
-      listType: "playlist",
-      list: CONFIG.playlistId,
-      controls: 0,
-      modestbranding: 1,
-      rel: 0,
-      playsinline: 1,
-      disablekb: 1,
-      iv_load_policy: 3,
-      origin: window.location.origin,
-    },
+  listType: "playlist",
+  list: CONFIG.playlistId,
+  controls: 0,
+  modestbranding: 1,
+  rel: 0,
+  playsinline: 1,
+  disablekb: 1,
+  iv_load_policy: 3,
+  // origin: window.location.origin,   <-- remove or comment out this line
+},
     events: {
       onReady: handlePlayerReady,
       onStateChange: handlePlayerStateChange,
