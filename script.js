@@ -1,5 +1,5 @@
 /* ==========================================================================
-   दिल का सफर — cinematic music player
+  लग्जरी रिक्शा— cinematic music player
    Vanilla JS. No frameworks, no build step, no backend for playback (a small
    Firebase Realtime Database is used only for the live "online now" count).
 
