@@ -1,5 +1,5 @@
 /* ==========================================================================
-  लग्जरी रिक्शा— cinematic music player
+   लग्जरी रिक्शा — cinematic music player
    Vanilla JS. No frameworks, no build step, no backend for playback (a small
    Firebase Realtime Database is used only for the live "online now" count).
 
@@ -26,7 +26,7 @@
 const CONFIG = {
   // Paste a YouTube playlist ID here (the part after "list=" in a playlist
   // URL). Example: https://www.youtube.com/playlist?list=PLxxxxxxxxxxxx
- playlistId: "PLcrE2_0C5h0wplMKN7ZvNJpwSuj-H0Y-C",
+  playlistId: "PLcrE2_0C5h0wplMKN7ZvNJpwSuj-H0Y-C",
 
   // Devanagari (or any) title rendered large in the background. Set
   // showHeroTitle to false to disable it entirely.
@@ -34,7 +34,7 @@ const CONFIG = {
   showHeroTitle: true,
 
   // External service links, opened in a new tab.
-  spotifyUrl: "https://open.spotify.com/playlist/03PTAasbZO4zn3BjmykF5V?si=B92tJmDzQi2iKhJlGZnpIw&utm_source=whatsapp&pi=RoxoJS5KRYivB&sci=spotify%3Acard-config%3A4LEZcscsXVoFDGDBVvOIGI&nd=1&dlsi=3821a940b52b40f7",
+  spotifyUrl: "https://open.spotify.com//playlist/03PTAasbZO4zn3BjmykF5V?si=B92tJmDzQi2iKhJlGZnpIw&utm_source=whatsapp&pi=RoxoJS5KRYivB&sci=spotify%3Acard-config%3A4LEZcscsXVoFDGDBVvOIGI&nd=1&dlsi=3821a940b52b40f7",
   youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLcrE2_0C5h0wplMKN7ZvNJpwSuj-H0Y-C",
 
   // "Online" pill in the top right. Backed by real Firebase presence
@@ -47,6 +47,7 @@ const CONFIG = {
   // If set to a path/URL (e.g. "assets/background.jpg"), that image is used
   // as the fixed background instead of the built-in illustrated skyline.
   backgroundImage: "assets/bg.webp",
+  backgroundImageMobile: "assets/bg-mobile.webp",
 
   // When true, a heavily blurred wash of the current song's thumbnail is
   // faded in behind the illustration/photo each time the track changes.
@@ -90,6 +91,9 @@ const state = {
   progressRafId: null,
   lastProgressPaint: 0,
   metadataRetryTimer: null,
+  queueIds: [],
+  queueMeta: {},
+  queueOpen: false,
 };
 
 /* ==========================================================================
@@ -108,6 +112,7 @@ function cacheDom() {
   el.statusBanner = document.getElementById("statusBanner");
 
   el.bgPhoto = document.getElementById("bgPhoto");
+  el.bgPhotoMobile = document.getElementById("bgPhotoMobile");
   el.bgPhotoDynamic = document.getElementById("bgPhotoDynamic");
   el.rowFar = document.getElementById("rowFarBuildings");
   el.rowMid = document.getElementById("rowMidBuildings");
@@ -133,6 +138,13 @@ function cacheDom() {
   el.iconVolume = document.getElementById("iconVolume");
   el.iconMuted = document.getElementById("iconMuted");
   el.volumeSlider = document.getElementById("volumeSlider");
+
+  el.queueBtn = document.getElementById("queueBtn");
+  el.queuePanel = document.getElementById("queuePanel");
+  el.queueBackdrop = document.getElementById("queueBackdrop");
+  el.queueCloseBtn = document.getElementById("queueCloseBtn");
+  el.queueHandle = document.getElementById("queueHandle");
+  el.queueList = document.getElementById("queueList");
 }
 
 /* ==========================================================================
@@ -152,6 +164,7 @@ function initializeApp() {
   initProgressBarInteraction();
   initKeyboardControls();
   initVolumeControl();
+  initQueue();
 
   showStatus("Loading playlist…", { loading: true });
   loadYouTubeAPI();
@@ -247,18 +260,39 @@ function initHeroTitle() {
    ========================================================================== */
 
 function initBackgroundPhoto() {
-  if (!CONFIG.backgroundImage) return;
-  const img = new Image();
-  img.onload = () => {
-    el.bgPhoto.style.backgroundImage = `url("${CONFIG.backgroundImage}")`;
-    el.bgPhoto.classList.add("is-visible");
-    // A user-supplied photo takes over from the built-in illustration.
-    document.getElementById("bgIllustration").style.opacity = "0";
-  };
-  img.onerror = () => {
-    console.warn(`[player] Could not load CONFIG.backgroundImage "${CONFIG.backgroundImage}", falling back to the built-in illustration.`);
-  };
-  img.src = CONFIG.backgroundImage;
+  if (!CONFIG.backgroundImage && !CONFIG.backgroundImageMobile) return;
+
+  const mobileQuery = window.matchMedia("(max-width: 620px)");
+
+  function loadInto(targetEl, src) {
+    if (!src) return;
+    const img = new Image();
+    img.onload = () => {
+      targetEl.style.backgroundImage = `url("${src}")`;
+      targetEl.classList.add("is-visible");
+      document.getElementById("bgIllustration").style.opacity = "0";
+    };
+    img.onerror = () => {
+      console.warn(`[player] Could not load background "${src}".`);
+    };
+    img.src = src;
+  }
+
+  function applyForViewport() {
+    const useMobile = mobileQuery.matches && CONFIG.backgroundImageMobile;
+    const src = useMobile ? CONFIG.backgroundImageMobile : CONFIG.backgroundImage;
+    const targetEl = useMobile ? el.bgPhotoMobile : el.bgPhoto;
+    const otherEl = useMobile ? el.bgPhoto : el.bgPhotoMobile;
+
+    if (!src) return;
+    if (targetEl.style.backgroundImage.includes(src)) return; // already loaded
+
+    otherEl.classList.remove("is-visible");
+    loadInto(targetEl, src);
+  }
+
+  applyForViewport();
+  mobileQuery.addEventListener("change", applyForViewport);
 }
 
 // Small deterministic PRNG so the generated skyline is stable across reloads.
@@ -416,16 +450,16 @@ function createYouTubePlayer() {
     height: "1",
     width: "1",
     playerVars: {
-  listType: "playlist",
-  list: CONFIG.playlistId,
-  controls: 0,
-  modestbranding: 1,
-  rel: 0,
-  playsinline: 1,
-  disablekb: 1,
-  iv_load_policy: 3,
-  // origin: window.location.origin,   <-- remove or comment out this line
-},
+      listType: "playlist",
+      list: CONFIG.playlistId,
+      controls: 0,
+      modestbranding: 1,
+      rel: 0,
+      playsinline: 1,
+      disablekb: 1,
+      iv_load_policy: 3,
+      origin: window.location.origin,
+    },
     events: {
       onReady: handlePlayerReady,
       onStateChange: handlePlayerStateChange,
@@ -447,6 +481,8 @@ function handlePlayerReady(event) {
 
   hideStatus();
   refreshMetadataWithRetry();
+
+  buildQueueList(playlist);
 
   if (CONFIG.autoplay) {
     state.player.playVideo();
@@ -551,10 +587,13 @@ function updateSongMetadata(data) {
   el.trackArtist.textContent = data.author || "Unknown artist";
   el.trackTitle.title = data.title || "";
 
-  setAlbumArtwork(data.video_id);
+setAlbumArtwork(data.video_id);
   updateBackground(data.video_id);
-}
 
+  state.queueMeta[data.video_id] = { title: data.title || "Untitled", author: data.author || "Unknown artist" };
+  refreshQueueRow(data.video_id);
+  highlightCurrentQueueRow();
+}
 /* ==========================================================================
    12. PLAYBACK CONTROLS
    ========================================================================== */
@@ -744,6 +783,226 @@ function updateVolumeIcon() {
 /* ==========================================================================
    15. KEYBOARD SHORTCUTS
    ========================================================================== */
+   /* ==========================================================================
+   14b. QUEUE DRAWER — swipeable "up next" panel
+   ========================================================================== */
+
+function initQueue() {
+  el.queueBtn.addEventListener("click", toggleQueue);
+  el.queueCloseBtn.addEventListener("click", closeQueue);
+  el.queueBackdrop.addEventListener("click", closeQueue);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && state.queueOpen) closeQueue();
+  });
+
+  initQueueSwipeToClose();
+}
+
+function toggleQueue() {
+  if (state.queueOpen) closeQueue();
+  else openQueue();
+}
+
+function openQueue() {
+  state.queueOpen = true;
+  el.queuePanel.classList.add("is-open");
+  el.queueBackdrop.classList.add("is-open");
+  el.queuePanel.setAttribute("aria-hidden", "false");
+  el.queueBtn.classList.add("is-active");
+  el.queueBtn.setAttribute("aria-expanded", "true");
+  highlightCurrentQueueRow(true);
+}
+
+function closeQueue() {
+  state.queueOpen = false;
+  el.queuePanel.classList.remove("is-open");
+  el.queuePanel.style.transform = "";
+  el.queueBackdrop.classList.remove("is-open");
+  el.queuePanel.setAttribute("aria-hidden", "true");
+  el.queueBtn.classList.remove("is-active");
+  el.queueBtn.setAttribute("aria-expanded", "false");
+}
+
+// Drag the handle (or header) down to dismiss, like a native bottom sheet.
+function initQueueSwipeToClose() {
+  let startY = 0;
+  let currentY = 0;
+  let dragging = false;
+
+  function onDown(e) {
+    dragging = true;
+    startY = e.touches ? e.touches[0].clientY : e.clientY;
+    el.queuePanel.style.transition = "none";
+  }
+
+  function onMove(e) {
+    if (!dragging) return;
+    currentY = (e.touches ? e.touches[0].clientY : e.clientY) - startY;
+    if (currentY < 0) currentY = 0;
+    el.queuePanel.style.transform = `translate(-50%, ${currentY}px)`;
+  }
+
+  function onUp() {
+    if (!dragging) return;
+    dragging = false;
+    el.queuePanel.style.transition = "";
+    if (currentY > 90) {
+      closeQueue();
+    } else {
+      el.queuePanel.style.transform = "";
+    }
+    currentY = 0;
+  }
+
+  [el.queueHandle, el.queueList.parentElement.querySelector(".queue-header")].forEach((handle) => {
+    if (!handle) return;
+    handle.addEventListener("pointerdown", onDown);
+  });
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp);
+}
+
+// Concurrency-limited fetch queue so we don't fire 50 requests at once.
+function runWithConcurrency(items, limit, worker) {
+  let index = 0;
+  let active = 0;
+
+  return new Promise((resolve) => {
+    function next() {
+      if (index >= items.length && active === 0) {
+        resolve();
+        return;
+      }
+      while (active < limit && index < items.length) {
+        const item = items[index++];
+        active += 1;
+        worker(item).finally(() => {
+          active -= 1;
+          next();
+        });
+      }
+    }
+    next();
+  });
+}
+
+// YouTube's keyless, official oEmbed endpoint — used only to label queue
+// entries that haven't been played yet (getVideoData() only knows the
+// currently cued/playing video, not the rest of the playlist).
+function fetchOEmbedMeta(videoId) {
+  const url = `https://www.youtube.com/oembed?url=${encodeURIComponent(
+    "https://www.youtube.com/watch?v=" + videoId
+  )}&format=json`;
+
+  return fetch(url)
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data) => {
+      state.queueMeta[videoId] = {
+        title: (data && data.title) || "Unavailable video",
+        author: (data && data.author_name) || "",
+      };
+    })
+    .catch(() => {
+      state.queueMeta[videoId] = { title: "Unavailable video", author: "" };
+    })
+    .then(() => {
+      refreshQueueRow(videoId);
+    });
+}
+
+function buildQueueList(playlistIds) {
+  state.queueIds = playlistIds.slice();
+  el.queueList.innerHTML = "";
+
+  playlistIds.forEach((videoId, index) => {
+    const li = document.createElement("li");
+    li.className = "queue-list-item";
+
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "queue-row";
+    row.dataset.videoId = videoId;
+    row.dataset.index = String(index);
+    row.setAttribute("aria-label", `Play track ${index + 1}`);
+    row.addEventListener("click", () => playQueueIndex(index));
+
+    const indexLabel = document.createElement("span");
+    indexLabel.className = "queue-row-index";
+    indexLabel.textContent = String(index + 1);
+
+    const thumb = document.createElement("img");
+    thumb.className = "queue-row-thumb";
+    thumb.alt = "";
+    thumb.loading = "lazy";
+
+    const text = document.createElement("span");
+    text.className = "queue-row-text";
+    const titleEl = document.createElement("span");
+    titleEl.className = "queue-row-title";
+    titleEl.textContent = "Loading…";
+    const artistEl = document.createElement("span");
+    artistEl.className = "queue-row-artist";
+    text.appendChild(titleEl);
+    text.appendChild(document.createElement("br"));
+    text.appendChild(artistEl);
+
+    row.appendChild(indexLabel);
+    row.appendChild(thumb);
+    row.appendChild(text);
+    li.appendChild(row);
+    el.queueList.appendChild(li);
+
+    loadBestThumbnail(videoId, (url) => {
+      thumb.src = url;
+    });
+  });
+
+  // Fetch real titles/authors for entries we don't already know, a few at a
+  // time so a long playlist doesn't fire dozens of requests simultaneously.
+  const unknownIds = playlistIds.filter((id) => !state.queueMeta[id]);
+  runWithConcurrency(unknownIds, 4, fetchOEmbedMeta);
+
+  highlightCurrentQueueRow();
+}
+
+function refreshQueueRow(videoId) {
+  const meta = state.queueMeta[videoId];
+  if (!meta) return;
+  const row = el.queueList.querySelector(`.queue-row[data-video-id="${cssEscape(videoId)}"]`);
+  if (!row) return;
+  const titleEl = row.querySelector(".queue-row-title");
+  const artistEl = row.querySelector(".queue-row-artist");
+  if (titleEl) titleEl.textContent = meta.title;
+  if (artistEl) artistEl.textContent = meta.author;
+}
+
+function highlightCurrentQueueRow(scrollIntoView) {
+  if (!state.player || !state.player.getPlaylistIndex) return;
+  const currentIndex = state.player.getPlaylistIndex();
+  const rows = el.queueList.querySelectorAll(".queue-row");
+  rows.forEach((row) => {
+    const isCurrent = Number(row.dataset.index) === currentIndex;
+    row.classList.toggle("is-current", isCurrent);
+    if (isCurrent && scrollIntoView) {
+      row.scrollIntoView({ block: "nearest" });
+    }
+  });
+}
+
+function playQueueIndex(index) {
+  if (!state.player || !state.player.playVideoAt) return;
+  state.player.playVideoAt(index);
+  closeQueue();
+}
+
+// Minimal CSS.escape fallback for the small set of characters that can
+// appear in a YouTube video ID (letters, digits, - and _ — none of which
+// actually need escaping, but this keeps the selector build defensive).
+function cssEscape(value) {
+  return window.CSS && CSS.escape ? CSS.escape(value) : String(value).replace(/["\\]/g, "\\$&");
+}
+
 
 function initKeyboardControls() {
   document.addEventListener("keydown", (e) => {

@@ -131,6 +131,11 @@ img {
 
 .bg-photo.is-visible {
   opacity: 1;
+
+}
+
+.bg-photo--mobile {
+  display: none;
 }
 
 /* dynamic per-song wash, sits above the static photo/illustration */
@@ -607,6 +612,192 @@ img {
 }
 
 /* ==========================================================================
+   QUEUE TOGGLE BUTTON
+   ========================================================================== */
+
+.queue-btn.is-active {
+  background: rgba(255, 255, 255, 0.14);
+  opacity: 1;
+}
+
+/* ==========================================================================
+   QUEUE DRAWER
+   ========================================================================== */
+
+.queue-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  background: rgba(10, 4, 3, 0.45);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 260ms ease;
+}
+
+.queue-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.queue-panel {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 30;
+  width: min(560px, 94vw);
+  max-height: min(64vh, 520px);
+  display: flex;
+  flex-direction: column;
+  background: rgba(31, 13, 11, 0.94);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: none;
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 -20px 55px rgba(8, 3, 2, 0.55);
+  transform: translate(-50%, 100%);
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  touch-action: none;
+}
+
+.queue-panel.is-open {
+  transform: translate(-50%, 0);
+}
+
+.queue-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(248, 241, 228, 0.28);
+  margin: 12px auto 4px;
+  flex: none;
+}
+
+.queue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 22px 12px;
+  flex: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.queue-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.queue-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.queue-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+.queue-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 10px 18px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.queue-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: none;
+  text-align: left;
+  transition: background 140ms ease;
+}
+
+.queue-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.queue-row:active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.queue-row-thumb {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--color-maroon);
+}
+
+.queue-row-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.queue-row-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.queue-row-artist {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.queue-row-index {
+  flex: none;
+  width: 20px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.queue-row.is-current {
+  background: rgba(227, 169, 76, 0.12);
+}
+
+.queue-row.is-current .queue-row-title {
+  color: var(--color-gold);
+}
+
+.queue-row.is-current .queue-row-index {
+  color: var(--color-gold);
+}
+
+.queue-row-playing-icon {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--color-gold);
+}
+/* ==========================================================================
    RESPONSIVE — TABLET
    ========================================================================== */
 
@@ -629,6 +820,14 @@ img {
     top: 16px;
     left: 16px;
     font-size: 11.5px;
+  }
+
+  .bg-photo--mobile.is-visible {
+    display: block;
+  }
+
+  .bg-photo--mobile.is-visible ~ .bg-photo:not(.bg-photo--mobile) {
+    opacity: 0;
   }
 
   .service-nav {
