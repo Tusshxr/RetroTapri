@@ -44,6 +44,16 @@
   --shadow-btn: 0 8px 20px rgba(8, 3, 2, 0.35);
 
   color-scheme: dark;
+
+
+  .player {
+  transition: box-shadow 600ms ease; /* add this line to the existing .player rule */
+}
+
+.progress-fill,
+.player-art-ring {
+  background: conic-gradient(from 180deg, var(--accent-color) 0%, transparent 100%);
+}
 }
 
 * {
@@ -509,6 +519,27 @@ img {
   transform: translateX(-50%);
   opacity: 0;
   transition: opacity 150ms ease;
+}
+
+.scrub-tooltip {
+  position: absolute;
+  bottom: 22px;
+  left: 0;
+  transform: translateX(-50%);
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--color-charcoal);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.progress-track.is-scrubbing .scrub-tooltip {
+  opacity: 1;
 }
 
 .progress-track:hover .progress-handle,

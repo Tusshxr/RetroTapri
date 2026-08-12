@@ -17,6 +17,7 @@
      updateBackground        – optional per-song background wash
      formatTime               – mm:ss helper
      initPresence             – real "online now" count via Firebase
+     initQueue                – swipeable "up next" drawer
    ========================================================================== */
 
 /* ==========================================================================
@@ -80,7 +81,6 @@ const firebaseConfig = {
    ========================================================================== */
 
 const state = {
-repeatOne: false,
   player: null,
   playerReady: false,
   isPlaying: false,
@@ -95,6 +95,8 @@ repeatOne: false,
   queueIds: [],
   queueMeta: {},
   queueOpen: false,
+  repeatOne: false,
+  consecutiveErrors: 0, // guards against an endless auto-skip loop on a fully broken playlist
 };
 
 /* ==========================================================================
@@ -104,7 +106,6 @@ repeatOne: false,
 const el = {};
 
 function cacheDom() {
-  el.repeatBtn = document.getElementById("repeatBtn");
   el.clock = document.getElementById("clock");
   el.onlinePill = document.getElementById("onlinePill");
   el.onlineCount = document.getElementById("onlineCount");
@@ -130,6 +131,7 @@ function cacheDom() {
   el.progressTrack = document.getElementById("progressTrack");
   el.progressFill = document.getElementById("progressFill");
   el.progressHandle = document.getElementById("progressHandle");
+  el.scrubTooltip = document.getElementById("scrubTooltip");
 
   el.prevBtn = document.getElementById("prevBtn");
   el.seekBackBtn = document.getElementById("seekBackBtn");
@@ -142,6 +144,7 @@ function cacheDom() {
   el.iconVolume = document.getElementById("iconVolume");
   el.iconMuted = document.getElementById("iconMuted");
   el.volumeSlider = document.getElementById("volumeSlider");
+  el.repeatBtn = document.getElementById("repeatBtn");
 
   el.queueBtn = document.getElementById("queueBtn");
   el.queuePanel = document.getElementById("queuePanel");
@@ -282,18 +285,25 @@ function initBackgroundPhoto() {
     img.src = src;
   }
 
-  function applyForViewport() {
-    const useMobile = mobileQuery.matches && CONFIG.backgroundImageMobile;
-    const src = useMobile ? CONFIG.backgroundImageMobile : CONFIG.backgroundImage;
-    const targetEl = useMobile ? el.bgPhotoMobile : el.bgPhoto;
-    const otherEl = useMobile ? el.bgPhoto : el.bgPhotoMobile;
+function applyForViewport() {
+  const useMobile = mobileQuery.matches && CONFIG.backgroundImageMobile;
+  const src = useMobile ? CONFIG.backgroundImageMobile : CONFIG.backgroundImage;
+  const targetEl = useMobile ? el.bgPhotoMobile : el.bgPhoto;
+  const otherEl = useMobile ? el.bgPhoto : el.bgPhotoMobile;
 
-    if (!src) return;
-    if (targetEl.style.backgroundImage.includes(src)) return; // already loaded
+  if (!src) return;
 
-    otherEl.classList.remove("is-visible");
-    loadInto(targetEl, src);
+  otherEl.classList.remove("is-visible");
+
+  if (targetEl.style.backgroundImage.includes(src)) {
+    // Bytes are already loaded on this element from an earlier viewport
+    // switch — just re-show it, no need to re-fetch/decode the image.
+    targetEl.classList.add("is-visible");
+    return;
   }
+
+  loadInto(targetEl, src);
+}
 
   applyForViewport();
   mobileQuery.addEventListener("change", applyForViewport);
@@ -424,11 +434,40 @@ function setAlbumArtwork(videoId) {
     (url) => {
       el.albumArt.src = url;
       el.albumArt.alt = el.trackTitle.textContent;
+      updateAccentFromArt(url);
     },
     () => {
       el.albumArt.removeAttribute("src");
     }
   );
+}
+
+
+function updateAccentFromArt(thumbUrl) {
+  const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(thumbUrl)}&w=1&h=1`;
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+
+  img.onload = () => {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 1;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, 1, 1);
+      const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+      document.documentElement.style.setProperty("--accent-color", `rgb(${r}, ${g}, ${b})`);
+      document.documentElement.style.setProperty("--progress-color", `rgb(${r}, ${g}, ${b})`);
+    } catch (err) {
+      resetAccentColor();
+    }
+  };
+  img.onerror = resetAccentColor;
+  img.src = proxyUrl;
+}
+
+function resetAccentColor() {
+  document.documentElement.style.removeProperty("--accent-color");
+  document.documentElement.style.removeProperty("--progress-color");
 }
 
 /* ==========================================================================
@@ -485,7 +524,6 @@ function handlePlayerReady(event) {
 
   hideStatus();
   refreshMetadataWithRetry();
-
   buildQueueList(playlist);
 
   if (CONFIG.autoplay) {
@@ -500,6 +538,7 @@ function handlePlayerStateChange(event) {
     case YTState.PLAYING:
       state.isPlaying = true;
       state.duration = state.player.getDuration() || 0;
+      state.consecutiveErrors = 0; // successful playback clears the error-loop guard
       updateUI();
       refreshMetadataWithRetry();
       startProgressLoop();
@@ -523,7 +562,7 @@ function handlePlayerStateChange(event) {
       refreshMetadataWithRetry();
       break;
 
-case YTState.ENDED:
+    case YTState.ENDED:
       if (state.repeatOne) {
         state.player.seekTo(0, true);
         state.player.playVideo();
@@ -550,6 +589,17 @@ function handlePlayerError(event) {
     150: "This video can't be played here.",
   };
   const message = messages[event.data] || "Something went wrong with playback.";
+
+  state.consecutiveErrors += 1;
+
+  // If several tracks in a row fail, the playlist itself is likely broken
+  // (e.g. every video is private/region-locked) — stop auto-skipping and
+  // say so plainly instead of cycling through error toasts forever.
+  if (state.consecutiveErrors >= 3) {
+    showStatus("Several tracks in this playlist can't be played. Check CONFIG.playlistId.", { error: true });
+    return;
+  }
+
   showStatus(message, { error: true, autoHide: true });
 
   // Try to keep the music going by skipping the broken track.
@@ -568,6 +618,7 @@ function handlePlayerError(event) {
 function refreshMetadataWithRetry(attempt) {
   attempt = attempt || 0;
   clearTimeout(state.metadataRetryTimer);
+  state.metadataRetryTimer = null;
 
   if (!state.player || !state.player.getVideoData) return;
 
@@ -597,16 +648,18 @@ function updateSongMetadata(data) {
   el.trackArtist.style.display = data.author ? "block" : "none";
   el.trackTitle.title = data.title || "";
 
-setAlbumArtwork(data.video_id);
+  setAlbumArtwork(data.video_id);
   updateBackground(data.video_id);
 
   state.queueMeta[data.video_id] = { title: data.title || "Untitled", author: data.author || "Unknown artist" };
   refreshQueueRow(data.video_id);
   highlightCurrentQueueRow();
 }
+
 /* ==========================================================================
    12. PLAYBACK CONTROLS
    ========================================================================== */
+
 function initControls() {
   el.playBtn.addEventListener("click", togglePlayPause);
   el.prevBtn.addEventListener("click", playPrevious);
@@ -713,12 +766,26 @@ function initProgressBarInteraction() {
     return Math.max(0, Math.min(1, x / rect.width));
   }
 
+  function showTooltip(fraction) {
+    if (!el.scrubTooltip || !state.duration) return;
+    const rect = el.progressTrack.getBoundingClientRect();
+    const px = Math.min(Math.max(fraction * rect.width, 20), rect.width - 20);
+    el.scrubTooltip.style.left = `${px}px`;
+    el.scrubTooltip.textContent = formatTime(fraction * state.duration);
+    el.progressTrack.classList.add("is-scrubbing");
+  }
+
+  function hideTooltip() {
+    el.progressTrack.classList.remove("is-scrubbing");
+  }
+
   function onPointerDown(e) {
     if (!state.duration) return;
     dragging = true;
     state.isSeeking = true;
     const fraction = fractionFromEvent(e);
     paintProgress(fraction * state.duration, state.duration);
+    showTooltip(fraction);
     el.progressTrack.setPointerCapture && e.pointerId != null && el.progressTrack.setPointerCapture(e.pointerId);
   }
 
@@ -726,6 +793,7 @@ function initProgressBarInteraction() {
     if (!dragging) return;
     const fraction = fractionFromEvent(e);
     paintProgress(fraction * state.duration, state.duration);
+    showTooltip(fraction);
   }
 
   function onPointerUp(e) {
@@ -734,13 +802,13 @@ function initProgressBarInteraction() {
     const fraction = fractionFromEvent(e);
     seekTo(fraction, true);
     state.isSeeking = false;
+    hideTooltip();
   }
 
   el.progressTrack.addEventListener("pointerdown", onPointerDown);
   window.addEventListener("pointermove", onPointerMove);
   window.addEventListener("pointerup", onPointerUp);
 
-  // Keyboard access when the progress bar itself is focused.
   el.progressTrack.addEventListener("keydown", (e) => {
     if (!state.duration) return;
     if (e.key === "ArrowRight") {
@@ -807,9 +875,6 @@ function updateVolumeIcon() {
 }
 
 /* ==========================================================================
-   15. KEYBOARD SHORTCUTS
-   ========================================================================== */
-   /* ==========================================================================
    14b. QUEUE DRAWER — swipeable "up next" panel
    ========================================================================== */
 
@@ -1029,6 +1094,9 @@ function cssEscape(value) {
   return window.CSS && CSS.escape ? CSS.escape(value) : String(value).replace(/["\\]/g, "\\$&");
 }
 
+/* ==========================================================================
+   15. KEYBOARD SHORTCUTS
+   ========================================================================== */
 
 function initKeyboardControls() {
   document.addEventListener("keydown", (e) => {
