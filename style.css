@@ -1,5 +1,5 @@
 /* ==========================================================================
-   दिल का सफर — cinematic Indian-street music player
+   — cinematic Indian-street music player
    Design tokens first, then layout, then components, then responsive rules.
    ========================================================================== */
 
@@ -352,7 +352,7 @@ img {
   left: 50%;
   bottom: 32px;
   z-index: 20;
-  width: min(650px, 92vw);
+  width: min(750px, 92vw);
   min-height: 118px;
   display: flex;
   align-items: center;
@@ -517,12 +517,6 @@ img {
 
 /* ---- controls ---- */
 
-.player-controls {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
 
 .ctrl-btn {
   width: 34px;
@@ -902,10 +896,10 @@ img {
 
 .player-body {
   flex: 1 1 auto;
-  min-width: 0;
+  min-width: 140px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 9px;
 }
 
   .player-controls {
