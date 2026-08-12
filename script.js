@@ -593,7 +593,8 @@ function updateSongMetadata(data) {
 
   state.currentVideoId = data.video_id;
   el.trackTitle.textContent = data.title || "Untitled";
-  el.trackArtist.textContent = data.author || "Unknown artist";
+  el.trackArtist.textContent = data.author || "";
+  el.trackArtist.style.display = data.author ? "block" : "none";
   el.trackTitle.title = data.title || "";
 
 setAlbumArtwork(data.video_id);

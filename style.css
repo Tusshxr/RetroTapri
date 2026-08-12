@@ -76,8 +76,8 @@ button:focus-visible,
 a:focus-visible,
 .progress-track:focus-visible,
 .volume-slider:focus-visible {
-  outline: 2px solid var(--color-gold);
-  outline-offset: 3px;
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--color-gold);
   border-radius: 4px;
 }
 
@@ -220,7 +220,7 @@ img {
   height: 7px;
   border-radius: 50%;
   background: #6cd67a;
-  box-shadow: 0 0 0 0 rgba(108, 214, 122, 0.6);
+  box-shadow: 0 0 0 0 rgba(108, 214, 122, 0.55);
   animation: pulseDot 2.2s ease-out infinite;
 }
 
@@ -275,7 +275,7 @@ img {
 }
 
 .hero-title.is-hidden {
-  display: none;
+  opacity: 0;
 }
 
 /* ==========================================================================
@@ -366,6 +366,7 @@ img {
   box-shadow: var(--shadow-soft);
   transform: translate(-50%, 40px);
   opacity: 0;
+  overflow: hidden;
   animation: playerEnter 700ms cubic-bezier(0.16, 1, 0.3, 1) 200ms forwards;
 }
 
@@ -416,12 +417,12 @@ img {
 
 /* ---- song info + progress ---- */
 
-.player-controls {
-  flex: none;
+.player-body {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
-  align-items: center;
-  gap: 6px;
-  max-width: 340px;
+  flex-direction: column;
+  gap: 9px;
 }
 .track-meta {
   min-width: 0;
@@ -517,6 +518,12 @@ img {
 
 /* ---- controls ---- */
 
+.player-controls {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
 .ctrl-btn {
   width: 34px;
@@ -893,14 +900,6 @@ img {
   .track-artist {
     font-size: 11.5px;
   }
-
-.player-body {
-  flex: 1 1 auto;
-  min-width: 140px;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
 
   .player-controls {
     order: 3;
