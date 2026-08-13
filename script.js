@@ -59,7 +59,7 @@ const CONFIG = {
   // simply stays paused and waits for the user to press play.
   autoplay: false,
 
-  defaultVolume: 70, // initial volume level (0 = muted, 100 = max)
+  defaultVolume: 100, // initial volume level (0 = muted, 100 = max)
 };
 
 /* ==========================================================================
