@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>लग्जरी रिक्शा V2 Under Development — Music Player</title>
+<title>लग्जरी रिक्शा — Music Player</title>
 <meta name="description" content="A cinematic, illustrated Indian-street-inspired YouTube playlist player." />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -141,7 +141,6 @@
        CENTRAL HERO TITLE
   ============================================================= -->
   <div class="hero-title" id="heroTitle" aria-hidden="true"></div>
-  
 
   <!-- ============================================================
        STATUS / LOADING / ERROR BANNER
@@ -236,6 +235,14 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m6.4 5 12.6 12.6-1.4 1.4L5 6.4 6.4 5Zm12.6 1.4L6.4 19 5 17.6 17.6 5 19 6.4Z"/></svg>
       </button>
     </div>
+    <div class="queue-search-row">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="text" id="queueSearchInput" class="queue-search-input" placeholder="Search by song, artist, or movie…" autocomplete="off" spellcheck="false" />
+      <button class="queue-search-clear" id="queueSearchClear" aria-label="Clear search" style="display:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m6.4 5 12.6 12.6-1.4 1.4L5 6.4 6.4 5Zm12.6 1.4L6.4 19 5 17.6 17.6 5 19 6.4Z"/></svg>
+      </button>
+    </div>
+    <p class="queue-search-empty" id="queueSearchEmpty" style="display:none">No songs match your search.</p>
     <ul class="queue-list" id="queueList" role="list"></ul>
   </section>
 

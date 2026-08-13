@@ -164,6 +164,9 @@ function cacheDom() {
   el.queueCloseBtn = document.getElementById("queueCloseBtn");
   el.queueHandle = document.getElementById("queueHandle");
   el.queueList = document.getElementById("queueList");
+  el.queueSearchInput = document.getElementById("queueSearchInput");
+  el.queueSearchClear = document.getElementById("queueSearchClear");
+  el.queueSearchEmpty = document.getElementById("queueSearchEmpty");
 }
 
 /* ==========================================================================
@@ -1239,6 +1242,44 @@ function initQueue() {
   });
 
   initQueueSwipeToClose();
+  initQueueSearch();
+}
+
+// Filters the already-rendered queue rows by song title, artist/channel, and
+// (when present in the title text itself, e.g. `From "Movie Name"`) the
+// movie/album name. YouTube/oEmbed don't expose a separate movie or year
+// field, so a year only matches if it's literally printed in the title.
+function initQueueSearch() {
+  el.queueSearchInput.addEventListener("input", () => {
+    const query = el.queueSearchInput.value.trim().toLowerCase();
+    el.queueSearchClear.style.display = query ? "flex" : "none";
+    filterQueueRows(query);
+  });
+
+  el.queueSearchClear.addEventListener("click", () => {
+    el.queueSearchInput.value = "";
+    el.queueSearchClear.style.display = "none";
+    filterQueueRows("");
+    el.queueSearchInput.focus();
+  });
+}
+
+function filterQueueRows(query) {
+  const items = el.queueList.querySelectorAll(".queue-list-item");
+  let visibleCount = 0;
+
+  items.forEach((item) => {
+    const row = item.querySelector(".queue-row");
+    const videoId = row.dataset.videoId;
+    const meta = state.queueMeta[videoId];
+    const haystack = meta ? `${meta.title} ${meta.author}`.toLowerCase() : "";
+
+    const matches = !query || haystack.includes(query);
+    item.classList.toggle("is-filtered-out", !matches);
+    if (matches) visibleCount += 1;
+  });
+
+  el.queueSearchEmpty.style.display = visibleCount === 0 ? "block" : "none";
 }
 
 function toggleQueue() {
@@ -1274,6 +1315,12 @@ function closeQueue() {
   el.queuePanel.setAttribute("aria-hidden", "true");
   el.queueBtn.classList.remove("is-active");
   el.queueBtn.setAttribute("aria-expanded", "false");
+
+  if (el.queueSearchInput && el.queueSearchInput.value) {
+    el.queueSearchInput.value = "";
+    el.queueSearchClear.style.display = "none";
+    filterQueueRows("");
+  }
 }
 
 function initQueueSwipeToClose() {
@@ -1433,6 +1480,12 @@ function refreshQueueRow(videoId) {
   const artistEl = row.querySelector(".queue-row-artist");
   if (titleEl) titleEl.textContent = meta.title;
   if (artistEl) artistEl.textContent = meta.author;
+
+  // Metadata for this row may have just arrived after the user already
+  // typed a search — re-check it against the active query if there is one.
+  if (el.queueSearchInput && el.queueSearchInput.value.trim()) {
+    filterQueueRows(el.queueSearchInput.value.trim().toLowerCase());
+  }
 }
 
 function highlightCurrentQueueRow(scrollIntoView) {
