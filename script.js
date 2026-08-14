@@ -682,6 +682,7 @@ function updateBackground(videoId) {
 // pattern once, then animates each bar's height with a staggered CSS-driven
 // pulse while playing, reusing the same bars (cloned) as the progress fill.
 function generateWaveform() {
+  if (!el.waveformBars || !el.progressFillMask) return;
   const rand = seededRandom(42);
   const count = CONFIG.waveformBarCount;
   el.waveformBars.innerHTML = "";
@@ -699,8 +700,6 @@ function generateWaveform() {
     el.waveformBars.appendChild(bar);
   });
 
-  // Clone into the fill mask so the "played" portion renders in gold over
-  // the same bar shapes, clipped by width via progress-fill-mask.
   const clone = document.createElement("div");
   clone.className = "waveform-bars-clone";
   heights.forEach((h) => {
@@ -715,8 +714,9 @@ function generateWaveform() {
 let waveformPulseId = null;
 
 function startWaveformPulse() {
-  if (waveformPulseId) return;
+  if (waveformPulseId || !el.waveformBars) return;
   const bars = el.waveformBars.querySelectorAll("span");
+  if (!bars.length) return;
   let t = 0;
   const tick = () => {
     t += 1;
@@ -977,10 +977,16 @@ function updateSongMetadata(data) {
   const fullTitle = data.title || "Untitled";
   const author = data.author || "";
   const { title, subtitle } = splitTitleAndSubtitle(fullTitle);
-  el.trackTitle.textContent = title;
-  el.trackTitle.title = data.title || "";
-  el.trackSubtitle.textContent = subtitle;
-  el.trackArtist.textContent = author;
+  if (el.trackTitle) {
+    el.trackTitle.textContent = title;
+    el.trackTitle.title = data.title || "";
+  }
+  if (el.trackSubtitle) {
+    el.trackSubtitle.textContent = subtitle;
+  }
+  if (el.trackArtist) {
+    el.trackArtist.textContent = author;
+  }
 
   setAlbumArtwork(data.video_id);
   updateBackground(data.video_id);
