@@ -37,9 +37,9 @@ const CONFIG = {
   showHeroTitle: appEnv.showHeroTitle ?? true,
 
   youtubeMusicUrl: appEnv.youtubeMusicUrl || "https://music.youtube.com/playlist?list=RDCLAK5uy_lHpBhjR3PefMmM-_sCM4cWOY6AcpxtCIk",
-  spotifyUrl: appEnv.spotifyUrl || "https://open.spotify.com/playlist/03PTAasbZO4zn3BjmykF5V",
+  spotifyUrl: appEnv.spotifyUrl || "https://open.spotify.com/artist/2oBG74gAocPMFv6Ij9ykdo?si=1ff78d2948de434a",
   instagramUrl: appEnv.instagramUrl || "https://instagram.com/",
-  githubUrl: appEnv.githubUrl || "https://github.com/ianshulx/LuxuryRickshaw",
+  githubUrl: appEnv.githubUrl || "https://github.com/Tusshxr/RetroTapri",
 
   showOnlineCount: appEnv.showOnlineCount ?? true,
   onlineCount: appEnv.onlineCount ?? 462,
@@ -50,10 +50,10 @@ const CONFIG = {
 
   autoplay: appEnv.autoplay ?? false,
 
-  weatherApiKey: appEnv.weatherApiKey || "ec5208a9b5473bcb00997fd41558a5f4",
-  fallbackLocationName: appEnv.fallbackLocationName || "Manali",
-  fallbackLat: appEnv.fallbackLat ?? 32.2432,
-  fallbackLon: appEnv.fallbackLon ?? 77.1892,
+  weatherApiKey: appEnv.weatherApiKey || "2d4019f959037a85cc6082f015dc5947",
+  fallbackLocationName: appEnv.fallbackLocationName || "Pune",
+  fallbackLat: appEnv.fallbackLat ?? 18.5204,
+  fallbackLon: appEnv.fallbackLon ?? 73.8567,
   useGeolocation: appEnv.useGeolocation ?? true,
   weatherRefreshMinutes: appEnv.weatherRefreshMinutes ?? 20,
 
@@ -65,13 +65,14 @@ const CONFIG = {
    ========================================================================== */
 
 const firebaseConfig = appEnv.firebaseConfig || {
-  apiKey: "AIzaSyCmnxFyJarwNRsXEXt-eTp7BAQcFrT39fM",
-  authDomain: "rickshaw-10933.firebaseapp.com",
-  databaseURL: "https://rickshaw-10933-default-rtdb.firebaseio.com",
-  projectId: "rickshaw-10933",
-  storageBucket: "rickshaw-10933.firebasestorage.app",
-  messagingSenderId: "301375252455",
-  appId: "1:301375252455:web:6c11bde4c6979e5048ff42",
+  apiKey: "AIzaSyCE-AX1dCieu5vKI6SmLtdRxtZ3fPaWX88",
+  authDomain: "retrotapri.firebaseapp.com",
+  databaseURL: "https://retrotapri-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "retrotapri",
+  storageBucket: "retrotapri.firebasestorage.app",
+  messagingSenderId: "153067445334",
+  appId: "1:153067445334:web:5cd1c74db24db0011baff7",
+  measurementId: "G-5LP32H2WWF"
 };
 
 /* ==========================================================================
