@@ -31,12 +31,12 @@
 const appEnv = window.APP_CONFIG || {};
 
 const CONFIG = {
-  playlistId: appEnv.playlistId || "PLcrE2_0C5h0wplMKN7ZvNJpwSuj-H0Y-C",
+  playlistId: appEnv.playlistId || "RDCLAK5uy_lHpBhjR3PefMmM-_sCM4cWOY6AcpxtCIk",
 
   heroTitle: appEnv.heroTitle ?? "लग्जरी रिक्शा",
   showHeroTitle: appEnv.showHeroTitle ?? true,
 
-  youtubeMusicUrl: appEnv.youtubeMusicUrl || "https://music.youtube.com/playlist?list=PLcrE2_0C5h0wplMKN7ZvNJpwSuj-H0Y-C",
+  youtubeMusicUrl: appEnv.youtubeMusicUrl || "https://music.youtube.com/playlist?list=RDCLAK5uy_lHpBhjR3PefMmM-_sCM4cWOY6AcpxtCIk",
   spotifyUrl: appEnv.spotifyUrl || "https://open.spotify.com/playlist/03PTAasbZO4zn3BjmykF5V",
   instagramUrl: appEnv.instagramUrl || "https://instagram.com/",
   githubUrl: appEnv.githubUrl || "https://github.com/ianshulx/LuxuryRickshaw",
