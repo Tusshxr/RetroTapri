@@ -83,6 +83,7 @@ const state = {
   player: null,
   playerReady: false,
   isPlaying: false,
+  userWantsPlayback: false,
   duration: 0,
   currentVideoId: null,
   isSeeking: false,
@@ -98,6 +99,31 @@ const state = {
   manualLocation: null,
   locationSearchOpen: false,
 };
+
+// --- Mobile Background Audio Session Bridge ---
+// iOS Safari & Android Chrome suspend video iframes when going to Home Screen unless
+// an HTML5 audio element with an active MediaSession is running in the background.
+const bgAudioSession = new Audio();
+bgAudioSession.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+bgAudioSession.loop = true;
+bgAudioSession.volume = 0.01;
+
+function enableBackgroundAudioSession() {
+  try {
+    const playPromise = bgAudioSession.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        /* browser user-gesture policy */
+      });
+    }
+  } catch (e) {}
+}
+
+function pauseBackgroundAudioSession() {
+  try {
+    bgAudioSession.pause();
+  } catch (e) {}
+}
 
 /* ==========================================================================
    3. DOM REFERENCES
@@ -853,19 +879,35 @@ function handlePlayerStateChange(event) {
   switch (event.data) {
     case YTState.PLAYING:
       state.isPlaying = true;
+      state.userWantsPlayback = true;
       state.duration = state.player.getDuration() || 0;
       state.consecutiveErrors = 0;
+      enableBackgroundAudioSession();
       updateUI();
       refreshMetadataWithRetry();
       startProgressLoop();
       startWaveformPulse();
       updateMediaSessionPlaybackState(true);
+      updateMediaSessionPositionState();
       highlightCurrentQueueRow();
       hideStatus();
       break;
 
     case YTState.PAUSED:
+      // If paused automatically by browser when minimizing to home screen,
+      // and the user didn't explicitly tap pause:
+      if (document.hidden && state.userWantsPlayback) {
+        enableBackgroundAudioSession();
+        setTimeout(() => {
+          if (state.player && state.userWantsPlayback) {
+            state.player.playVideo();
+          }
+        }, 150);
+        return;
+      }
       state.isPlaying = false;
+      state.userWantsPlayback = false;
+      pauseBackgroundAudioSession();
       updateUI();
       stopProgressLoop();
       stopWaveformPulse();
@@ -1015,10 +1057,52 @@ function updateTabTitle(trackTitle) {
 function initMediaSession() {
   if (!("mediaSession" in navigator)) return;
 
-  navigator.mediaSession.setActionHandler("play", () => state.player && state.player.playVideo());
-  navigator.mediaSession.setActionHandler("pause", () => state.player && state.player.pauseVideo());
-  navigator.mediaSession.setActionHandler("previoustrack", playPrevious);
-  navigator.mediaSession.setActionHandler("nexttrack", playNext);
+  navigator.mediaSession.setActionHandler("play", () => {
+    state.userWantsPlayback = true;
+    enableBackgroundAudioSession();
+    if (state.player) state.player.playVideo();
+  });
+
+  navigator.mediaSession.setActionHandler("pause", () => {
+    state.userWantsPlayback = false;
+    pauseBackgroundAudioSession();
+    if (state.player) state.player.pauseVideo();
+  });
+
+  navigator.mediaSession.setActionHandler("previoustrack", () => {
+    state.userWantsPlayback = true;
+    enableBackgroundAudioSession();
+    playPrevious();
+  });
+
+  navigator.mediaSession.setActionHandler("nexttrack", () => {
+    state.userWantsPlayback = true;
+    enableBackgroundAudioSession();
+    playNext();
+  });
+
+  try {
+    navigator.mediaSession.setActionHandler("seekto", (details) => {
+      if (details.seekTime !== undefined && state.player) {
+        seekTo(details.seekTime);
+      }
+    });
+  } catch (e) {}
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      if (state.userWantsPlayback) {
+        enableBackgroundAudioSession();
+        if (state.player && state.player.playVideo) {
+          state.player.playVideo();
+        }
+      }
+    } else {
+      if (state.userWantsPlayback && state.player && state.player.playVideo) {
+        state.player.playVideo();
+      }
+    }
+  });
 }
 
 function updateMediaSessionMetadata(title, author, videoId) {
@@ -1030,7 +1114,11 @@ function updateMediaSessionMetadata(title, author, videoId) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title,
         artist: author,
-        artwork: [{ src: url, sizes: "512x512", type: "image/jpeg" }],
+        artwork: [
+          { src: url, sizes: "512x512", type: "image/jpeg" },
+          { src: url, sizes: "256x256", type: "image/jpeg" },
+          { src: url, sizes: "128x128", type: "image/jpeg" }
+        ],
       });
     },
     () => {
@@ -1042,6 +1130,19 @@ function updateMediaSessionMetadata(title, author, videoId) {
 function updateMediaSessionPlaybackState(isPlaying) {
   if (!("mediaSession" in navigator)) return;
   navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+}
+
+function updateMediaSessionPositionState() {
+  if (!("mediaSession" in navigator) || !("setPositionState" in navigator.mediaSession)) return;
+  if (!state.player || !state.duration || state.duration <= 0) return;
+  try {
+    const current = Math.min(state.player.getCurrentTime() || 0, state.duration);
+    navigator.mediaSession.setPositionState({
+      duration: state.duration,
+      playbackRate: 1,
+      position: current
+    });
+  } catch (e) {}
 }
 
 /* ==========================================================================
@@ -1072,19 +1173,27 @@ function toggleShuffle() {
 function togglePlayPause() {
   if (!state.player || !state.playerReady) return;
   if (state.isPlaying) {
+    state.userWantsPlayback = false;
+    pauseBackgroundAudioSession();
     state.player.pauseVideo();
   } else {
+    state.userWantsPlayback = true;
+    enableBackgroundAudioSession();
     state.player.playVideo();
   }
 }
 
 function playNext() {
   if (!state.player || !state.playerReady) return;
+  state.userWantsPlayback = true;
+  enableBackgroundAudioSession();
   state.player.nextVideo();
 }
 
 function playPrevious() {
   if (!state.player || !state.playerReady) return;
+  state.userWantsPlayback = true;
+  enableBackgroundAudioSession();
   const elapsed = state.player.getCurrentTime ? state.player.getCurrentTime() : 0;
   if (elapsed > 3) {
     state.player.seekTo(0, true);
