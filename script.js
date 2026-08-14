@@ -33,7 +33,7 @@ const appEnv = window.APP_CONFIG || {};
 const CONFIG = {
   playlistId: appEnv.playlistId || "RDCLAK5uy_lHpBhjR3PefMmM-_sCM4cWOY6AcpxtCIk",
 
-  heroTitle: appEnv.heroTitle ?? "लग्जरी रिक्शा",
+  heroTitle: appEnv.heroTitle ?? "रेट्रो टपरी",
   showHeroTitle: appEnv.showHeroTitle ?? true,
 
   youtubeMusicUrl: appEnv.youtubeMusicUrl || "https://music.youtube.com/playlist?list=RDCLAK5uy_lHpBhjR3PefMmM-_sCM4cWOY6AcpxtCIk",
@@ -225,9 +225,8 @@ function updateClock() {
    ========================================================================== */
 
 function initServiceLinks() {
-  el.ytMusicLink.href = CONFIG.youtubeMusicUrl;
-  el.instagramLink.href = CONFIG.instagramUrl;
-  el.githubLink.href = CONFIG.githubUrl;
+  if (el.ytMusicLink && CONFIG.youtubeMusicUrl) el.ytMusicLink.href = CONFIG.youtubeMusicUrl;
+  if (el.instagramLink && CONFIG.instagramUrl) el.instagramLink.href = CONFIG.instagramUrl;
 }
 
 function initOnlinePill() {
@@ -533,11 +532,15 @@ function selectSearchedLocation(place, label) {
    ========================================================================== */
 
 function initHeroTitle() {
-  if (!CONFIG.showHeroTitle || !CONFIG.heroTitle) {
+  if (!CONFIG.showHeroTitle) {
     el.heroTitle.classList.add("is-hidden");
     return;
   }
-  el.heroTitle.textContent = CONFIG.heroTitle;
+  el.heroTitle.classList.remove("is-hidden");
+  const img = el.heroTitle.querySelector(".hero-title-img");
+  if (img && CONFIG.heroTitle) {
+    img.alt = CONFIG.heroTitle;
+  }
 }
 
 /* ==========================================================================
