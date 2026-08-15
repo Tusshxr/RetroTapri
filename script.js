@@ -472,9 +472,11 @@ function initPlaylistWheel() {
 
 function onPlaylistChange(index, playlist) {
   if (!playlist) return;
+  console.log("[playlist] Switch requested → index:", index, "name:", playlist.name, "id:", playlist.id);
   state.currentPlaylistIndex = index;
 
   if (playlist.id === state.currentPlaylistId && state.playerReady) {
+    console.log("[playlist] Same playlist already loaded, skipping.");
     return;
   }
 
@@ -506,6 +508,7 @@ function onPlaylistChange(index, playlist) {
 
     let loadSucceeded = false;
     try {
+      console.log("[playlist] Calling loadPlaylist({ list:", playlist.id, ", listType: 'playlist' })");
       state.player.loadPlaylist({
         list: playlist.id,
         listType: "playlist",
@@ -514,21 +517,19 @@ function onPlaylistChange(index, playlist) {
       });
       loadSucceeded = true;
     } catch (e) {
+      console.warn("[playlist] loadPlaylist object form failed:", e);
       try {
         state.player.loadPlaylist(playlist.id, 0, 0);
         loadSucceeded = true;
       } catch (err) {
-        console.warn("[player] loadPlaylist failed:", err);
+        console.warn("[player] loadPlaylist positional form also failed:", err);
       }
     }
 
     if (loadSucceeded) {
+      console.log("[playlist] loadPlaylist call succeeded for:", playlist.name);
       state.userWantsPlayback = true;
       enableBackgroundAudioSession();
-      // loadPlaylist() is documented to autoplay, but some browsers ignore
-      // that when the call is a postMessage into a cross-origin iframe
-      // rather than a "direct" gesture — nudge playback explicitly as a
-      // safety net a beat later, once the new list has had time to cue.
       setTimeout(() => {
         if (state.currentPlaylistId === playlist.id && state.userWantsPlayback && state.player && state.player.playVideo) {
           try {
@@ -536,6 +537,17 @@ function onPlaylistChange(index, playlist) {
           } catch (err) { }
         }
       }, 400);
+
+      // After 2 seconds, log what playlist the player actually loaded
+      setTimeout(() => {
+        if (state.player && state.player.getPlaylist) {
+          const loadedList = state.player.getPlaylist();
+          console.log("[playlist] After 2s — player has", loadedList ? loadedList.length : 0, "videos in queue for:", playlist.name);
+          if (loadedList && loadedList.length > 0) {
+            console.log("[playlist] First 3 video IDs:", loadedList.slice(0, 3));
+          }
+        }
+      }, 2000);
     }
 
     // Some restricted/unavailable playlists never fire onStateChange or
@@ -553,6 +565,8 @@ function onPlaylistChange(index, playlist) {
         showStatus("\u201c" + playlist.name + "\u201d isn't playable right now. Try another playlist.", { error: true });
       }
     }, 7000);
+  } else {
+    console.warn("[playlist] Player not ready — cannot switch. playerReady:", state.playerReady);
   }
 }
 
