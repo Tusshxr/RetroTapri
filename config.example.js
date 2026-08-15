@@ -6,8 +6,15 @@
  */
 
 window.APP_CONFIG = {
-  // YouTube Playlist ID (the part after "list=" in a YouTube playlist URL)
+  // YouTube Playlist ID (default/active playlist)
   playlistId: "YOUR_YOUTUBE_PLAYLIST_ID",
+
+  // Optional: Custom Playlist Collection for the OptionWheel selector
+  // playlists: [
+  //   { id: "PLBKzzWUn97oauQnvPTOpVa2SoRuF2S61y", name: "रेट्रो टपरी", heroTitle: "रेट्रो टपरी" },
+  //   { id: "RDCLAK5uy_lHpBhjR3PefMmM-_sCM4cWOY6AcpxtCIk", name: "90s Hits", heroTitle: "90s हिट्स" },
+  //   { id: "PLdiU6Sj2X1fUu-qH4n5z5B7P4J-K_tB6P", name: "Chai & Lo-Fi", heroTitle: "चाय और लो-फ़ाई" }
+  // ],
 
   // Devanagari (or custom) hero title displayed in background
   heroTitle: "लग्जरी रिक्शा",

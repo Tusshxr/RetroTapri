@@ -1331,6 +1331,170 @@ img {
 }
 
 /* ==========================================================================
+   BORDERLESS CURVED OPTION WHEEL (PLAYLIST SELECTOR)
+   ========================================================================== */
+
+.playlist-wheel-container {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(440px, 86vw);
+  height: 56vh;
+  height: 56dvh;
+  max-height: 500px;
+  min-height: 300px;
+  z-index: 12;
+  pointer-events: none;
+  overflow: visible;
+  user-select: none;
+  touch-action: none;
+}
+
+/* Soft ambient shadow/vignette glow behind the option wheel for maximum readability */
+.playlist-wheel-container::before {
+  content: "";
+  position: absolute;
+  top: -15%;
+  bottom: -15%;
+  left: -20px;
+  width: 115%;
+  background: radial-gradient(ellipse 90% 75% at 0% 50%, rgba(12, 4, 3, 0.78) 0%, rgba(12, 4, 3, 0.5) 45%, rgba(12, 4, 3, 0.15) 75%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(12px);
+  border-radius: 0 50% 50% 0;
+}
+
+.playlist-wheel-mount {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: auto;
+}
+
+.option-wheel {
+  --ow-text-color: rgba(255, 255, 255, 0.52);
+  --ow-active-color: #ffffff;
+  --ow-font-size: 1.7rem;
+  --ow-inset: 42px;
+
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  outline: none;
+}
+
+.option-wheel--dragging {
+  cursor: grabbing;
+}
+
+/* Each option is absolutely centered, then offset along the curve by the
+   rAF loop through transform/opacity/filter, so everything stays in step. */
+.option-wheel__item {
+  position: absolute;
+  top: 50%;
+  left: var(--ow-inset);
+  white-space: nowrap;
+  font-family: var(--font-ui), "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: var(--ow-font-size);
+  line-height: 1.25;
+  font-weight: 300;
+  letter-spacing: -0.01em;
+  transform-origin: left center;
+  cursor: pointer;
+  will-change: transform, opacity, filter;
+  /* --ow-p goes 0 -> 1 as an option approaches the middle of the wheel */
+  color: color-mix(in srgb, var(--ow-active-color) calc(var(--ow-p, 0) * 100%), var(--ow-text-color));
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95), 0 3px 12px rgba(0, 0, 0, 0.85), 0 0 20px rgba(0, 0, 0, 0.7);
+  transition: text-shadow 200ms ease, color 150ms ease;
+  pointer-events: auto;
+}
+
+.option-wheel--right .option-wheel__item {
+  left: auto;
+  right: var(--ow-inset);
+  transform-origin: right center;
+}
+
+.option-wheel__item--selected {
+  font-weight: 700;
+  color: var(--ow-active-color);
+  text-shadow: 0 0 24px rgba(255, 255, 255, 0.65), 0 2px 8px rgba(0, 0, 0, 0.95), 0 4px 18px rgba(0, 0, 0, 0.9);
+}
+
+.option-wheel__item:hover:not(.option-wheel__item--selected) {
+  color: #ffffff;
+  text-shadow: 0 0 15px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.9);
+}
+
+/* Responsive Scaling */
+@media (max-width: 900px) {
+  .playlist-wheel-container {
+    width: min(380px, 85vw);
+    height: 50vh;
+    height: 50dvh;
+    max-height: 420px;
+  }
+
+  .option-wheel {
+    --ow-font-size: 1.45rem;
+    --ow-inset: 30px;
+  }
+}
+
+@media (max-width: 620px) {
+  .playlist-wheel-container {
+    width: min(340px, 88vw);
+    height: 46vh;
+    height: 46dvh;
+    max-height: 360px;
+    top: 46%;
+  }
+
+  .playlist-wheel-container::before {
+    width: 120%;
+    background: radial-gradient(ellipse 95% 80% at 0% 50%, rgba(10, 4, 3, 0.82) 0%, rgba(10, 4, 3, 0.55) 50%, rgba(10, 4, 3, 0.18) 78%, transparent 100%);
+  }
+
+  .option-wheel {
+    --ow-font-size: 1.3rem;
+    --ow-inset: 22px;
+  }
+}
+
+@media (max-width: 380px) {
+  .playlist-wheel-container {
+    width: min(300px, 90vw);
+    height: 42vh;
+    height: 42dvh;
+  }
+
+  .option-wheel {
+    --ow-font-size: 1.15rem;
+    --ow-inset: 16px;
+  }
+}
+
+@media (max-height: 500px) {
+  .playlist-wheel-container {
+    height: 65vh;
+    height: 65dvh;
+    max-height: 260px;
+  }
+
+  .option-wheel {
+    --ow-font-size: 1.15rem;
+    --ow-inset: 20px;
+  }
+}
+
+/* ==========================================================================
    RESPONSIVE — TABLET
    ========================================================================== */
 

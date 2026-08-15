@@ -30,8 +30,61 @@
 
 const appEnv = window.APP_CONFIG || {};
 
+const DEFAULT_PLAYLISTS = [
+  {
+    id: appEnv.playlistId || "PLBKzzWUn97oauQnvPTOpVa2SoRuF2S61y",
+    name: "रेट्रो टपरी",
+    subtitle: "Classic Nostalgia",
+    heroTitle: "रेट्रो टपरी",
+    youtubeMusicUrl: appEnv.youtubeMusicUrl || "https://youtube.com/playlist?list=PLBKzzWUn97oauQnvPTOpVa2SoRuF2S61y"
+  },
+  {
+    id: "RDCLAK5uy_lHpBhjR3PefMmM-_sCM4cWOY6AcpxtCIk",
+    name: "90s Hits",
+    subtitle: "Golden Bollywood",
+    heroTitle: "90s हिट्स",
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=RDCLAK5uy_lHpBhjR3PefMmM-_sCM4cWOY6AcpxtCIk"
+  },
+  {
+    id: "PLdiU6Sj2X1fUu-qH4n5z5B7P4J-K_tB6P",
+    name: "Chai & Lo-Fi",
+    subtitle: "Midnight Chill Beats",
+    heroTitle: "चाय और लो-फ़ाई",
+    youtubeMusicUrl: "https://youtube.com/playlist?list=PLdiU6Sj2X1fUu-qH4n5z5B7P4J-K_tB6P"
+  },
+  {
+    id: "PL_yIBWagYVjx1z_r4m1h3h1k9Q5u7z1a",
+    name: "सदाबहार नग्मे",
+    subtitle: "60s & 70s Legends",
+    heroTitle: "सदाबहार नग्मे",
+    youtubeMusicUrl: "https://youtube.com/playlist?list=PL_yIBWagYVjx1z_r4m1h3h1k9Q5u7z1a"
+  },
+  {
+    id: "PLbwt0P6S9Wp1m3_z3r8s_u2q9k4d1v7",
+    name: "Monsoon Melodies",
+    subtitle: "Soulful Rain Songs",
+    heroTitle: "रिमझिम बारिश",
+    youtubeMusicUrl: "https://youtube.com/playlist?list=PLbwt0P6S9Wp1m3_z3r8s_u2q9k4d1v7"
+  },
+  {
+    id: "PLFgquLnL59amJ3a7g6fW_b_pXJ0f5WfV8",
+    name: "Indie & Coke Studio",
+    subtitle: "Acoustic & Folk",
+    heroTitle: "देसी इंडी",
+    youtubeMusicUrl: "https://youtube.com/playlist?list=PLFgquLnL59amJ3a7g6fW_b_pXJ0f5WfV8"
+  },
+  {
+    id: "PLdG3Xw0r1zKq-q4z2r5h6m7n8b9v0c1",
+    name: "ग़ज़ल और सुकून",
+    subtitle: "Late Night Ghazals",
+    heroTitle: "सुकून-ए-ग़ज़ल",
+    youtubeMusicUrl: "https://youtube.com/playlist?list=PLdG3Xw0r1zKq-q4z2r5h6m7n8b9v0c1"
+  }
+];
+
 const CONFIG = {
-  playlistId: appEnv.playlistId || "RDCLAK5uy_lHpBhjR3PefMmM-_sCM4cWOY6AcpxtCIk",
+  playlists: appEnv.playlists || DEFAULT_PLAYLISTS,
+  playlistId: (appEnv.playlists && appEnv.playlists[0] ? appEnv.playlists[0].id : null) || appEnv.playlistId || DEFAULT_PLAYLISTS[0].id,
 
   heroTitle: appEnv.heroTitle ?? "रेट्रो टपरी",
   showHeroTitle: appEnv.showHeroTitle ?? true,
@@ -95,9 +148,15 @@ const state = {
   consecutiveErrors: 0,
   hasLiked: false,
   likeRef: null,
+  currentLikeRef: null,
+  likeCountListener: null,
   firebaseApp: null,
   manualLocation: null,
   locationSearchOpen: false,
+  currentPlaylistId: null,
+  currentPlaylistIndex: 0,
+  optionWheel: null,
+  playlistDrawerOpen: false,
 };
 
 // --- Mobile Background Audio Session Bridge ---
@@ -195,6 +254,9 @@ function cacheDom() {
   el.queueSearchInput = document.getElementById("queueSearchInput");
   el.queueSearchClear = document.getElementById("queueSearchClear");
   el.queueSearchEmpty = document.getElementById("queueSearchEmpty");
+
+  el.playlistWheelContainer = document.getElementById("playlistWheelContainer");
+  el.playlistWheelMount = document.getElementById("playlistWheelMount");
 }
 
 /* ==========================================================================
@@ -209,6 +271,7 @@ function initializeApp() {
   initOnlinePill();
   initPresence();
   initLikes();
+  initPlaylistWheel();
   initWeather();
   initLocationSearch();
   initBackgroundPhoto();
@@ -306,44 +369,176 @@ function initPresence() {
    6c. LIKES — real "like this playlist" count via Firebase
    ========================================================================== */
 
-function initLikes() {
+function bindPlaylistLikes(playlistId) {
   try {
     const app = getFirebaseApp();
     if (!app) return;
 
     const db = firebase.database();
-    const countRef = db.ref("likes/count");
-    const localKey = "rickshaw_liked_" + CONFIG.playlistId;
+    if (state.currentLikeRef && state.likeCountListener) {
+      state.currentLikeRef.off("value", state.likeCountListener);
+    }
 
-    countRef.on("value", (snap) => {
+    const countRef = db.ref("likes/" + playlistId + "/count");
+    state.currentLikeRef = countRef;
+    const localKey = "rickshaw_liked_" + playlistId;
+
+    state.likeCountListener = (snap) => {
       const value = snap.val();
-      el.likeCount.textContent = typeof value === "number" ? value : 0;
-    });
+      if (el.likeCount) el.likeCount.textContent = typeof value === "number" ? value : 0;
+    };
+    countRef.on("value", state.likeCountListener);
 
     state.hasLiked = localStorage.getItem(localKey) === "1";
     updateLikeButtonUI();
-
-    el.likeBtn.addEventListener("click", () => {
-      if (state.hasLiked) {
-        countRef.transaction((current) => Math.max(0, (current || 0) - 1));
-        localStorage.removeItem(localKey);
-        state.hasLiked = false;
-      } else {
-        countRef.transaction((current) => (current || 0) + 1);
-        localStorage.setItem(localKey, "1");
-        state.hasLiked = true;
-      }
-      updateLikeButtonUI();
-    });
   } catch (err) {
-    console.warn("[firebase] Likes init failed:", err);
+    console.warn("[firebase] Likes bind failed:", err);
+  }
+}
+
+function initLikes() {
+  bindPlaylistLikes(CONFIG.playlistId);
+
+  if (el.likeBtn) {
+    el.likeBtn.addEventListener("click", () => {
+      try {
+        const app = getFirebaseApp();
+        if (!app || !state.currentLikeRef) return;
+        const localKey = "rickshaw_liked_" + CONFIG.playlistId;
+
+        if (state.hasLiked) {
+          state.currentLikeRef.transaction((current) => Math.max(0, (current || 0) - 1));
+          localStorage.removeItem(localKey);
+          state.hasLiked = false;
+        } else {
+          state.currentLikeRef.transaction((current) => (current || 0) + 1);
+          localStorage.setItem(localKey, "1");
+          state.hasLiked = true;
+        }
+        updateLikeButtonUI();
+      } catch (err) {
+        console.warn("[firebase] Like transaction failed:", err);
+      }
+    });
   }
 }
 
 function updateLikeButtonUI() {
+  if (!el.likeBtn) return;
   el.likeBtn.classList.toggle("is-liked", state.hasLiked);
   el.likeBtn.setAttribute("aria-pressed", String(state.hasLiked));
   el.likeBtn.title = state.hasLiked ? "Unlike this playlist" : "Like this playlist";
+}
+
+/* ==========================================================================
+   6c-2. PLAYLIST SELECTOR — Borderless OptionWheel integration
+   ========================================================================== */
+
+function initPlaylistWheel() {
+  if (!el.playlistWheelMount) return;
+
+  // Determine initial selected playlist
+  let defaultIdx = CONFIG.playlists.findIndex((p) => p.id === CONFIG.playlistId);
+  if (defaultIdx < 0) defaultIdx = 0;
+  state.currentPlaylistIndex = defaultIdx;
+  state.currentPlaylistId = CONFIG.playlists[defaultIdx].id;
+
+  // Initialize Vanilla JS OptionWheel instance
+  try {
+    if (typeof OptionWheel === "function") {
+      const isMobile = window.innerWidth <= 620;
+      const isTablet = window.innerWidth <= 900;
+      const fontSize = isMobile ? 1.3 : isTablet ? 1.45 : 1.7;
+      const inset = isMobile ? 22 : isTablet ? 30 : 42;
+
+      state.optionWheel = new OptionWheel(el.playlistWheelMount, {
+        items: CONFIG.playlists,
+        defaultSelected: defaultIdx,
+        getItemLabel: (p) => (p && p.name ? p.name : String(p)),
+        side: "left",
+        fontSize: fontSize,
+        spacing: 1.35,
+        curve: 1.0,
+        tilt: 6.5,
+        blur: 2.0,
+        fade: 0.26,
+        minOpacity: 0.06,
+        smoothing: 180,
+        inset: inset,
+        loop: false,
+        draggable: true,
+        soundVolume: 0.4,
+        enableSynthSound: true,
+        onChange: (index, item) => {
+          onPlaylistChange(index, item);
+        }
+      });
+
+      window.addEventListener("resize", () => {
+        if (!state.optionWheel) return;
+        const mob = window.innerWidth <= 620;
+        const tab = window.innerWidth <= 900;
+        state.optionWheel.updateConfig({
+          fontSize: mob ? 1.3 : tab ? 1.45 : 1.7,
+          inset: mob ? 22 : tab ? 30 : 42,
+        });
+      });
+    }
+  } catch (err) {
+    console.error("[OptionWheel] Failed to initialize:", err);
+  }
+}
+
+function onPlaylistChange(index, playlist) {
+  if (!playlist) return;
+  state.currentPlaylistIndex = index;
+
+  if (playlist.id === state.currentPlaylistId && state.playerReady) {
+    return;
+  }
+
+  state.currentPlaylistId = playlist.id;
+  CONFIG.playlistId = playlist.id;
+
+  if (playlist.heroTitle) {
+    CONFIG.heroTitle = playlist.heroTitle;
+    if (el.heroTitle && !el.heroTitle.querySelector("img")) {
+      el.heroTitle.textContent = playlist.heroTitle;
+    }
+  }
+
+  if (playlist.youtubeMusicUrl && el.ytMusicLink) {
+    el.ytMusicLink.href = playlist.youtubeMusicUrl;
+  }
+
+  bindPlaylistLikes(playlist.id);
+  showToast("Playing: " + playlist.name);
+
+  // Switch playlist in YouTube Player
+  if (state.player && state.playerReady && state.player.loadPlaylist) {
+    showStatus("Loading " + playlist.name + "…", { loading: true });
+    state.consecutiveErrors = 0;
+    state.queueIds = [];
+    state.queueMeta = {};
+    if (el.queueList) el.queueList.replaceChildren();
+
+    try {
+      state.player.loadPlaylist({
+        list: playlist.id,
+        listType: "playlist",
+        index: 0,
+        suggestedQuality: "small"
+      });
+      state.userWantsPlayback = true;
+      enableBackgroundAudioSession();
+    } catch (e) {
+      try {
+        state.player.loadPlaylist(playlist.id, 0, 0);
+      } catch (err) {
+        console.warn("[player] loadPlaylist failed:", err);
+      }
+    }
+  }
 }
 
 /* ==========================================================================
@@ -889,7 +1084,13 @@ function handlePlayerStateChange(event) {
       startWaveformPulse();
       updateMediaSessionPlaybackState(true);
       updateMediaSessionPositionState();
-      highlightCurrentQueueRow();
+
+      const currentPlaylist = state.player && state.player.getPlaylist ? state.player.getPlaylist() : null;
+      if (currentPlaylist && currentPlaylist.length > 0 && (state.queueIds.length === 0 || state.queueIds[0] !== currentPlaylist[0])) {
+        buildQueueList(currentPlaylist);
+      } else {
+        highlightCurrentQueueRow();
+      }
       hideStatus();
       break;
 
@@ -924,6 +1125,10 @@ function handlePlayerStateChange(event) {
       state.isPlaying = false;
       updateUI();
       refreshMetadataWithRetry();
+      const cuedPlaylist = state.player && state.player.getPlaylist ? state.player.getPlaylist() : null;
+      if (cuedPlaylist && cuedPlaylist.length > 0 && (state.queueIds.length === 0 || state.queueIds[0] !== cuedPlaylist[0])) {
+        buildQueueList(cuedPlaylist);
+      }
       break;
 
     case YTState.ENDED:
