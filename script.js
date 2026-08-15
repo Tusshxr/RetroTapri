@@ -63,15 +63,22 @@ const PLAYLISTS = [
   }
 ];
 
+const activePlaylists = (Array.isArray(appEnv.playlists) && appEnv.playlists.length > 0)
+  ? appEnv.playlists
+  : PLAYLISTS;
+
+const defaultIdx = Math.max(0, Math.min(appEnv.defaultPlaylistIndex || 0, activePlaylists.length - 1));
+const initialPlaylist = activePlaylists[defaultIdx];
+
 const CONFIG = {
-  playlists: PLAYLISTS,
-  defaultPlaylistIndex: 0,
-  playlistId: PLAYLISTS[0].id,
+  playlists: activePlaylists,
+  defaultPlaylistIndex: defaultIdx,
+  playlistId: initialPlaylist.id,
 
   heroTitle: appEnv.heroTitle || "रेट्रो टपरी",
   showHeroTitle: appEnv.showHeroTitle ?? true,
 
-  youtubeMusicUrl: PLAYLISTS[0].youtubeMusicUrl || "",
+  youtubeMusicUrl: initialPlaylist.youtubeMusicUrl || "",
   spotifyUrl: appEnv.spotifyUrl || "https://open.spotify.com/artist/2oBG74gAocPMFv6Ij9ykdo?si=1ff78d2948de434a",
   instagramUrl: appEnv.instagramUrl || "https://instagram.com/",
   githubUrl: appEnv.githubUrl || "https://github.com/Tusshxr/RetroTapri",

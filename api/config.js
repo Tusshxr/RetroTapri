@@ -1,21 +1,13 @@
 /**
- * Serverless Config Bridge — Luxury Rickshaw Music Player
+ * Serverless Config Bridge — Luxury Rickshaw Music Player (Vercel)
  *
- * `config.js` is gitignored, so it never reaches a Vercel deployment — the
- * production site would otherwise silently fall back to whatever defaults
- * are hardcoded in script.js. This function fills that gap: it reads the
- * real credentials from the project's Environment Variables and serves them
- * as a plain JS file, so the site "just works" in production without a
- * secrets file that can't be committed.
+ * `config.js` is gitignored, so it never reaches a Vercel deployment.
+ * This serverless route dynamically reads environment variables set in
+ * Vercel / Netlify dashboard and provides them to the client.
  *
- * `vercel.json` rewrites requests for /config.js to this function ONLY on
- * Vercel. Locally (or on GitHub Pages) there's no rewrite engine, so the
- * literal static config.js file is served instead — nothing here changes
- * that workflow.
- *
- * Only env vars that are actually set (non-empty) are included. Anything
- * left out falls through to script.js's own built-in defaults, so a
- * partially-configured project never ends up with a half-broken object.
+ * Playlists are defined directly in `script.js`, so you do NOT need any playlist
+ * environment variable by default. If you want to override all playlists from Vercel,
+ * you can optionally set `PLAYLISTS_JSON`.
  */
 
 module.exports = (req, res) => {
@@ -27,12 +19,33 @@ module.exports = (req, res) => {
 
   const config = {};
 
-  if (has(env.PLAYLIST_ID)) config.playlistId = env.PLAYLIST_ID;
-  if (has(env.OPENWEATHER_API_KEY)) config.weatherApiKey = env.OPENWEATHER_API_KEY;
+  // Optional Hero Title Override
+  if (has(env.HERO_TITLE)) config.heroTitle = env.HERO_TITLE.trim();
 
-  // Only ship a firebaseConfig object when the fields required for the
-  // Realtime Database connection are all present — a partial object would
-  // silently break presence/likes instead of falling back cleanly.
+  // Social URLs
+  if (has(env.SPOTIFY_URL)) config.spotifyUrl = env.SPOTIFY_URL.trim();
+  if (has(env.INSTAGRAM_URL)) config.instagramUrl = env.INSTAGRAM_URL.trim();
+  if (has(env.GITHUB_URL)) config.githubUrl = env.GITHUB_URL.trim();
+
+  // Weather configuration
+  if (has(env.OPENWEATHER_API_KEY)) config.weatherApiKey = env.OPENWEATHER_API_KEY.trim();
+  if (has(env.FALLBACK_LOCATION_NAME)) config.fallbackLocationName = env.FALLBACK_LOCATION_NAME.trim();
+  if (has(env.FALLBACK_LAT)) config.fallbackLat = parseFloat(env.FALLBACK_LAT);
+  if (has(env.FALLBACK_LON)) config.fallbackLon = parseFloat(env.FALLBACK_LON);
+
+  // Optional: Complete playlists override as JSON string
+  if (has(env.PLAYLISTS_JSON)) {
+    try {
+      const parsed = JSON.parse(env.PLAYLISTS_JSON);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        config.playlists = parsed;
+      }
+    } catch (e) {
+      console.warn("Invalid PLAYLISTS_JSON environment variable:", e);
+    }
+  }
+
+  // Firebase Configuration (for live online listener count & like count)
   const firebaseRequired = [
     env.FIREBASE_API_KEY,
     env.FIREBASE_DATABASE_URL,
@@ -40,13 +53,13 @@ module.exports = (req, res) => {
   ];
   if (firebaseRequired.every(has)) {
     config.firebaseConfig = {
-      apiKey: env.FIREBASE_API_KEY,
-      authDomain: env.FIREBASE_AUTH_DOMAIN,
-      databaseURL: env.FIREBASE_DATABASE_URL,
-      projectId: env.FIREBASE_PROJECT_ID,
-      storageBucket: env.FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: env.FIREBASE_MESSAGING_SENDER_ID,
-      appId: env.FIREBASE_APP_ID,
+      apiKey: env.FIREBASE_API_KEY.trim(),
+      authDomain: env.FIREBASE_AUTH_DOMAIN ? env.FIREBASE_AUTH_DOMAIN.trim() : "",
+      databaseURL: env.FIREBASE_DATABASE_URL.trim(),
+      projectId: env.FIREBASE_PROJECT_ID.trim(),
+      storageBucket: env.FIREBASE_STORAGE_BUCKET ? env.FIREBASE_STORAGE_BUCKET.trim() : "",
+      messagingSenderId: env.FIREBASE_MESSAGING_SENDER_ID ? env.FIREBASE_MESSAGING_SENDER_ID.trim() : "",
+      appId: env.FIREBASE_APP_ID ? env.FIREBASE_APP_ID.trim() : "",
     };
   }
 
