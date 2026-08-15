@@ -1,5 +1,7 @@
 # Environment & Configuration secrets
+config.js
 /config.js
+*.env
 .env
 .env.local
 .env.*.local

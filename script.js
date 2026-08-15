@@ -103,19 +103,10 @@ const CONFIG = {
 };
 
 /* ==========================================================================
-   1b. FIREBASE — presence count + like count
+   1b. FIREBASE — presence count + like count (Fetched from Environment / config.js)
    ========================================================================== */
 
-const firebaseConfig = appEnv.firebaseConfig || {
-  apiKey: "AIzaSyCE-AX1dCieu5vKI6SmLtdRxtZ3fPaWX88",
-  authDomain: "retrotapri.firebaseapp.com",
-  databaseURL: "https://retrotapri-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "retrotapri",
-  storageBucket: "retrotapri.firebasestorage.app",
-  messagingSenderId: "153067445334",
-  appId: "1:153067445334:web:5cd1c74db24db0011baff7",
-  measurementId: "G-5LP32H2WWF"
-};
+const firebaseConfig = appEnv.firebaseConfig || null;
 
 /* ==========================================================================
    2. STATE
@@ -323,8 +314,7 @@ function initOnlinePill() {
 
 function getFirebaseApp() {
   if (state.firebaseApp) return state.firebaseApp;
-  if (typeof firebase === "undefined") {
-    console.warn("[firebase] SDK not loaded — check the <script> tags in index.html.");
+  if (typeof firebase === "undefined" || !firebaseConfig || !firebaseConfig.apiKey) {
     return null;
   }
   state.firebaseApp = firebase.apps && firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
