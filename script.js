@@ -92,7 +92,7 @@ const CONFIG = {
 
   autoplay: appEnv.autoplay ?? false,
 
-  weatherApiKey: appEnv.weatherApiKey || "2d4019f959037a85cc6082f015dc5947",
+  weatherApiKey: appEnv.weatherApiKey || "",
   fallbackLocationName: appEnv.fallbackLocationName || "Pune",
   fallbackLat: appEnv.fallbackLat ?? 18.5204,
   fallbackLon: appEnv.fallbackLon ?? 73.8567,
