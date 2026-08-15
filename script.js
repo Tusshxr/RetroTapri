@@ -21,7 +21,7 @@
      initLikes                  – real "likes" count via Firebase
      initWeather                – geolocation + OpenWeatherMap + rain effect
      initQueue                  – swipeable "up next" drawer
-     initArtSwipe                – drag/swipe on album art for prev/next
+     initArtSwipe              – drag/swipe on album art for prev/next
    ========================================================================== */
 
 /* ==========================================================================
@@ -30,17 +30,54 @@
 
 const appEnv = window.APP_CONFIG || {};
 
+const DEFAULT_PLAYLISTS = [
+  {
+    id: "PLBKzzWUn97oauQnvPTOpVa2SoRuF2S61y",
+    name: "रेट्रो टपरी",
+    subtitle: "Classic Nostalgia",
+    heroTitle: "रेट्रो टपरी",
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLGgr07aatIVk&si=y9FckODV9E01w8WC"
+  },
+  {
+    id: "RDCLAK5uy_lHpBhjR3PefMmM-_sCM4cWOY6AcpxtCIk",
+    name: "90s Hits",
+    subtitle: "Golden Bollywood",
+    heroTitle: "90s हिट्स",
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLM9TSDk-uGcU&si=6iHLKPdoBmWv92jF"
+  },
+  {
+    id: "PLdiU6Sj2X1fUu-qH4n5z5B7P4J-K_tB6P",
+    name: "Chai & Lo-Fi",
+    subtitle: "Midnight Chill Beats",
+    heroTitle: "चाय और लो-फ़ाई",
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLd-kxLW6FgCk&si=HLrcY_0gshT1NbGO"
+  },
+  {
+    id: "PL_yIBWagYVjx1z_r4m1h3h1k9Q5u7z1a",
+    name: "सदाबहार नग्मे",
+    subtitle: "60s & 70s Legends",
+    heroTitle: "सदाबहार नग्मे",
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLSUTMNjEr010&si=n3WMm9h-dwj_hbw3"
+  },
+  {
+    id: "PLbwt0P6S9Wp1m3_z3r8s_u2q9k4d1v7",
+    name: "Monsoon Melodies",
+    subtitle: "Soulful Rain Songs",
+    heroTitle: "रिमझिम बारिश",
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLKtBDc0rEOfI&si=3Y5PjUopH7nGbcNc"
+  },
+  {
+    id: "PLFgquLnL59amJ3a7g6fW_b_pXJ0f5WfV8",
+    name: "Indie & Coke Studio",
+    subtitle: "Acoustic & Folk",
+    heroTitle: "देसी इंडी",
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLdt3vaPZ0jIc&si=IAAj9eImrdJwpTfP"
+  }
+];
+
 const playlists = (Array.isArray(appEnv.playlists) && appEnv.playlists.length > 0)
   ? appEnv.playlists
-  : [
-      {
-        id: appEnv.playlistId || "PLBKzzWUn97oauQnvPTOpVa2SoRuF2S61y",
-        name: "रेट्रो टपरी",
-        subtitle: "Classic Nostalgia",
-        heroTitle: "रेट्रो टपरी",
-        youtubeMusicUrl: appEnv.youtubeMusicUrl || "https://music.youtube.com/playlist?list=PLGgr07aatIVk&si=y9FckODV9E01w8WC"
-      }
-    ];
+  : DEFAULT_PLAYLISTS;
 
 const defaultIdx = Math.max(0, Math.min(appEnv.defaultPlaylistIndex || 0, playlists.length - 1));
 const initialPlaylist = playlists[defaultIdx];
@@ -139,13 +176,13 @@ function enableBackgroundAudioSession() {
         /* browser user-gesture policy */
       });
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 function pauseBackgroundAudioSession() {
   try {
     bgAudioSession.pause();
-  } catch (e) {}
+  } catch (e) { }
 }
 
 /* ==========================================================================
@@ -751,25 +788,25 @@ function initBackgroundPhoto() {
     img.src = src;
   }
 
-function applyForViewport() {
-  const useMobile = mobileQuery.matches && CONFIG.backgroundImageMobile;
-  const src = useMobile ? CONFIG.backgroundImageMobile : CONFIG.backgroundImage;
-  const targetEl = useMobile ? el.bgPhotoMobile : el.bgPhoto;
-  const otherEl = useMobile ? el.bgPhoto : el.bgPhotoMobile;
+  function applyForViewport() {
+    const useMobile = mobileQuery.matches && CONFIG.backgroundImageMobile;
+    const src = useMobile ? CONFIG.backgroundImageMobile : CONFIG.backgroundImage;
+    const targetEl = useMobile ? el.bgPhotoMobile : el.bgPhoto;
+    const otherEl = useMobile ? el.bgPhoto : el.bgPhotoMobile;
 
-  if (!src) return;
+    if (!src) return;
 
-  otherEl.classList.remove("is-visible");
+    otherEl.classList.remove("is-visible");
 
-  if (targetEl.style.backgroundImage.includes(src)) {
-    // Bytes are already loaded on this element from an earlier viewport
-    // switch — just re-show it, no need to re-fetch/decode the image.
-    targetEl.classList.add("is-visible");
-    return;
+    if (targetEl.style.backgroundImage.includes(src)) {
+      // Bytes are already loaded on this element from an earlier viewport
+      // switch — just re-show it, no need to re-fetch/decode the image.
+      targetEl.classList.add("is-visible");
+      return;
+    }
+
+    loadInto(targetEl, src);
   }
-
-  loadInto(targetEl, src);
-}
 
   applyForViewport();
   mobileQuery.addEventListener("change", applyForViewport);
@@ -1256,7 +1293,7 @@ function initMediaSession() {
         seekTo(details.seekTime);
       }
     });
-  } catch (e) {}
+  } catch (e) { }
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
@@ -1311,7 +1348,7 @@ function updateMediaSessionPositionState() {
       playbackRate: 1,
       position: current
     });
-  } catch (e) {}
+  } catch (e) { }
 }
 
 /* ==========================================================================
