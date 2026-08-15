@@ -32,41 +32,41 @@ const appEnv = window.APP_CONFIG || {};
 
 const PLAYLISTS = [
   {
-    id: "PLGgr07aatIVk",
-    name: "Kishor Kumar",
-    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLGgr07aatIVk&si=oeseJNUXwbR-2qdD"
+    id: "PLP7LBOIQKXnA4xVwRgtLc4l-_0BEt64O4",
+    name: "Kishore Kumar",
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLP7LBOIQKXnA4xVwRgtLc4l-_0BEt64O4"
   },
   {
-    id: "PLM9TSDk-uGcU",
+    id: "PLGQe1I6sLySGI55ZhsBEdaH0dnnf8q0zc",
     name: "Govinda",
-    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLM9TSDk-uGcU&si=XojYL-7iVlddMy-g"
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLGQe1I6sLySGI55ZhsBEdaH0dnnf8q0zc"
   },
   {
-    id: "PLd-kxLW6FgCk",
+    id: "PLD87A4F8E523A7CF8",
     name: "Honey Singh",
-    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLd-kxLW6FgCk&si=HLrcY_0gshT1NbGO"
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLD87A4F8E523A7CF8"
   },
   {
-    id: "PLSUTMNjEr010",
+    id: "PLNf59ZpW8Fz5L7s4e4JzPjY2f2bY5yGq8",
     name: "Kumar Sanu",
-    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLSUTMNjEr010&si=olvIHHgDxrNip2Sr"
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLNf59ZpW8Fz5L7s4e4JzPjY2f2bY5yGq8"
   },
   {
-    id: "PLKtBDc0rEOfI",
-    name: "Salman",
-    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLKtBDc0rEOfI&si=o1KDw6E29hWmfyad"
+    id: "PL-_eM3AeXdo7T75xdtTY7VJErCyH0wG4o",
+    name: "Salman Khan",
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PL-_eM3AeXdo7T75xdtTY7VJErCyH0wG4o"
   },
   {
-    id: "PLdt3vaPZ0jIc",
-    name: "SM",
-    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLdt3vaPZ0jIc&si=9N6ZrKNkCyjIvMnG"
+    id: "PLBKzzWUn97oauQnvPTOpVa2SoRuF2S61y",
+    name: "रेट्रो टपरी",
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLBKzzWUn97oauQnvPTOpVa2SoRuF2S61y"
   }
 ];
 
 const CONFIG = {
   playlists: PLAYLISTS,
   defaultPlaylistIndex: 0,
-  playlistId: PLAYLISTS[0].id.split("&")[0],
+  playlistId: PLAYLISTS[0].id,
 
   heroTitle: appEnv.heroTitle || "रेट्रो टपरी",
   showHeroTitle: appEnv.showHeroTitle ?? true,
