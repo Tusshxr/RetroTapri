@@ -30,58 +30,58 @@
 
 const appEnv = window.APP_CONFIG || {};
 
+/* ── Playlists ────────────────────────────────────────────────────────────
+ *  To add a new playlist:
+ *    1. Open the playlist on YouTube Music / YouTube.
+ *    2. Copy the "list=" parameter from the URL.
+ *    3. Add a new { id, name, youtubeMusicUrl } object below.
+ *    4. The OptionWheel slider will pick it up automatically.
+ * ────────────────────────────────────────────────────────────────────────── */
 const PLAYLISTS = [
   {
-    id: "PLP7LBOIQKXnA4xVwRgtLc4l-_0BEt64O4",
-    name: "Kishore Kumar",
-    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLP7LBOIQKXnA4xVwRgtLc4l-_0BEt64O4"
+    id: "PLdt3vaPZ0jIc",
+    name: "1",
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLdt3vaPZ0jIc&si=5RcvdwFWkxg0Rbul"
   },
   {
-    id: "PLGQe1I6sLySGI55ZhsBEdaH0dnnf8q0zc",
-    name: "Govinda",
-    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLGQe1I6sLySGI55ZhsBEdaH0dnnf8q0zc"
+    id: "PLKtBDc0rEOfI",
+    name: "2",
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLKtBDc0rEOfI&si=fkP-Ro2RvqwZdLgh"
   },
   {
-    id: "PLD87A4F8E523A7CF8",
-    name: "Honey Singh",
-    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLD87A4F8E523A7CF8"
+    id: "PLSUTMNjEr010",
+    name: "3",
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLSUTMNjEr010&si=MLA4Wixk7d0wpKuy"
   },
   {
-    id: "PLNf59ZpW8Fz5L7s4e4JzPjY2f2bY5yGq8",
-    name: "Kumar Sanu",
-    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLNf59ZpW8Fz5L7s4e4JzPjY2f2bY5yGq8"
+    id: "PLd-kxLW6FgCk",
+    name: "4",
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLd-kxLW6FgCk&si=T3dXY1B-OpTm8YUb"
   },
   {
-    id: "PL-_eM3AeXdo7T75xdtTY7VJErCyH0wG4o",
-    name: "Salman Khan",
-    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PL-_eM3AeXdo7T75xdtTY7VJErCyH0wG4o"
+    id: "PLM9TSDk-uGcU",
+    name: "5",
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLM9TSDk-uGcU&si=aPy7_lcHH9NM0IGE"
   },
   {
-    id: "PLBKzzWUn97oauQnvPTOpVa2SoRuF2S61y",
-    name: "रेट्रो टपरी",
-    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLBKzzWUn97oauQnvPTOpVa2SoRuF2S61y"
+    id: "PLGgr07aatIVk",
+    name: "6",
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLGgr07aatIVk&si=kWzSsdPn3xY5uA0P"
   }
 ];
 
-const activePlaylists = (Array.isArray(appEnv.playlists) && appEnv.playlists.length > 0)
-  ? appEnv.playlists
-  : PLAYLISTS;
-
-const defaultIdx = Math.max(0, Math.min(appEnv.defaultPlaylistIndex || 0, activePlaylists.length - 1));
-const initialPlaylist = activePlaylists[defaultIdx];
-
 const CONFIG = {
-  playlists: activePlaylists,
-  defaultPlaylistIndex: defaultIdx,
-  playlistId: initialPlaylist.id,
+  playlists: PLAYLISTS,
+  defaultPlaylistIndex: 0,
+  playlistId: PLAYLISTS[0].id,
 
   heroTitle: appEnv.heroTitle || "रेट्रो टपरी",
   showHeroTitle: appEnv.showHeroTitle ?? true,
 
-  youtubeMusicUrl: initialPlaylist.youtubeMusicUrl || "",
-  spotifyUrl: appEnv.spotifyUrl || "https://open.spotify.com/artist/2oBG74gAocPMFv6Ij9ykdo?si=1ff78d2948de434a",
-  instagramUrl: appEnv.instagramUrl || "https://instagram.com/",
-  githubUrl: appEnv.githubUrl || "https://github.com/Tusshxr/RetroTapri",
+  youtubeMusicUrl: PLAYLISTS[0].youtubeMusicUrl || "",
+  spotifyUrl: appEnv.spotifyUrl || "",
+  instagramUrl: appEnv.instagramUrl || "",
+  githubUrl: appEnv.githubUrl || "",
 
   showOnlineCount: appEnv.showOnlineCount ?? true,
   onlineCount: appEnv.onlineCount ?? 462,

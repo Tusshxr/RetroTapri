@@ -1,7 +1,5 @@
-# Environment & Configuration secrets
+# Secrets & local config (NEVER push these)
 config.js
-/config.js
-*.env
 .env
 .env.local
 .env.*.local
@@ -12,6 +10,6 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Node dependencies (if any added later)
+# Node dependencies
 node_modules/
 npm-debug.log*
