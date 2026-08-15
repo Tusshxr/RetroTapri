@@ -139,6 +139,8 @@ const state = {
   currentPlaylistIndex: 0,
   optionWheel: null,
   playlistDrawerOpen: false,
+  playlistSwitchToken: 0,
+  playlistSwitchWatchdog: null,
 };
 
 // --- Mobile Background Audio Session Bridge ---
@@ -491,12 +493,21 @@ function onPlaylistChange(index, playlist) {
 
   // Switch playlist in YouTube Player
   if (state.player && state.playerReady && state.player.loadPlaylist) {
+    // Invalidate any in-flight watchdog from a previous switch and clear the
+    // stale now-playing UI immediately — otherwise the old track's title,
+    // artwork, and progress bar keep showing while (or if) the new playlist
+    // silently fails to load, which looks exactly like "nothing happened".
+    const switchToken = ++state.playlistSwitchToken;
+    clearPlaylistSwitchWatchdog();
+    resetNowPlayingForSwitch();
+
     showStatus("Loading " + playlist.name + "…", { loading: true });
     state.consecutiveErrors = 0;
     state.queueIds = [];
     state.queueMeta = {};
     if (el.queueList) el.queueList.replaceChildren();
 
+    let loadSucceeded = false;
     try {
       state.player.loadPlaylist({
         list: playlist.id,
@@ -504,16 +515,80 @@ function onPlaylistChange(index, playlist) {
         index: 0,
         suggestedQuality: "small"
       });
-      state.userWantsPlayback = true;
-      enableBackgroundAudioSession();
+      loadSucceeded = true;
     } catch (e) {
       try {
         state.player.loadPlaylist(playlist.id, 0, 0);
+        loadSucceeded = true;
       } catch (err) {
         console.warn("[player] loadPlaylist failed:", err);
       }
     }
+
+    if (loadSucceeded) {
+      state.userWantsPlayback = true;
+      enableBackgroundAudioSession();
+      // loadPlaylist() is documented to autoplay, but some browsers ignore
+      // that when the call is a postMessage into a cross-origin iframe
+      // rather than a "direct" gesture — nudge playback explicitly as a
+      // safety net a beat later, once the new list has had time to cue.
+      setTimeout(() => {
+        if (state.currentPlaylistId === playlist.id && state.userWantsPlayback && state.player && state.player.playVideo) {
+          try {
+            state.player.playVideo();
+          } catch (err) { }
+        }
+      }, 400);
+    }
+
+    // Some restricted/unavailable playlists never fire onStateChange or
+    // onError at all — the player just sits there forever. Watch for that
+    // and surface a real error instead of leaving the UI stuck on
+    // "Loading…" with the previous playlist's stale track underneath.
+    state.playlistSwitchWatchdog = setTimeout(() => {
+      if (switchToken !== state.playlistSwitchToken) return; // superseded by a newer switch
+      if (state.currentVideoId) return; // metadata arrived — switch succeeded
+
+      const currentList = state.player && state.player.getPlaylist ? state.player.getPlaylist() : null;
+      if (!currentList || currentList.length === 0) {
+        showStatus("Couldn't load \u201c" + playlist.name + "\u201d. It may be private, empty, or unavailable.", { error: true });
+      } else {
+        showStatus("\u201c" + playlist.name + "\u201d isn't playable right now. Try another playlist.", { error: true });
+      }
+    }, 7000);
   }
+}
+
+/* ==========================================================================
+   6c-3. PLAYLIST SWITCH HELPERS
+   ========================================================================== */
+
+function clearPlaylistSwitchWatchdog() {
+  if (state.playlistSwitchWatchdog) {
+    clearTimeout(state.playlistSwitchWatchdog);
+    state.playlistSwitchWatchdog = null;
+  }
+}
+
+function resetNowPlayingForSwitch() {
+  state.currentVideoId = null;
+  state.isPlaying = false;
+  state.duration = 0;
+  clearTimeout(state.metadataRetryTimer);
+  state.metadataRetryTimer = null;
+  stopProgressLoop();
+  stopWaveformPulse();
+  updateUI();
+
+  if (el.trackTitle) el.trackTitle.textContent = "Loading…";
+  if (el.trackSubtitle) el.trackSubtitle.textContent = "";
+  if (el.trackArtist) el.trackArtist.textContent = "Please wait";
+  if (el.albumArt) el.albumArt.removeAttribute("src");
+  if (el.currentTime) el.currentTime.textContent = "0:00";
+  if (el.durationTime) el.durationTime.textContent = "0:00";
+  if (el.progressFillMask) el.progressFillMask.style.width = "0%";
+  if (el.progressHandle) el.progressHandle.style.left = "0%";
+  if (el.progressTrack) el.progressTrack.setAttribute("aria-valuenow", "0");
 }
 
 /* ==========================================================================
@@ -1118,6 +1193,11 @@ function handlePlayerStateChange(event) {
 }
 
 function handlePlayerError(event) {
+  // We got a real signal from the player (even if it's a failure), so the
+  // "did nothing happen at all" watchdog no longer applies — the existing
+  // skip-ahead / give-up logic below takes over from here.
+  clearPlaylistSwitchWatchdog();
+
   const messages = {
     2: "This video can't be played.",
     5: "A playback error occurred.",
@@ -1195,6 +1275,7 @@ function updateSongMetadata(data) {
   if (data.video_id === state.currentVideoId) return;
 
   state.currentVideoId = data.video_id;
+  clearPlaylistSwitchWatchdog();
 
   const fullTitle = data.title || "Untitled";
   const author = data.author || "";
