@@ -6,22 +6,40 @@
  */
 
 window.APP_CONFIG = {
-  // YouTube Playlist ID (default/active playlist)
-  playlistId: "YOUR_YOUTUBE_PLAYLIST_ID",
+  // =========================================================================
+  // 1. PLAYLISTS (Single source of truth — manage all your playlists here)
+  // =========================================================================
+  playlists: [
+    {
+      id: "YOUR_YOUTUBE_PLAYLIST_ID_1",
+      name: "रेट्रो टपरी",
+      subtitle: "Classic Nostalgia",
+      heroTitle: "रेट्रो टपरी",
+      youtubeMusicUrl: "https://music.youtube.com/playlist?list=YOUR_PLAYLIST_ID_1"
+    },
+    {
+      id: "YOUR_YOUTUBE_PLAYLIST_ID_2",
+      name: "90s Hits",
+      subtitle: "Golden Bollywood",
+      heroTitle: "90s हिट्स",
+      youtubeMusicUrl: "https://music.youtube.com/playlist?list=YOUR_PLAYLIST_ID_2"
+    },
+    {
+      id: "YOUR_YOUTUBE_PLAYLIST_ID_3",
+      name: "Chai & Lo-Fi",
+      subtitle: "Midnight Chill Beats",
+      heroTitle: "चाय और लो-फ़ाई",
+      youtubeMusicUrl: "https://music.youtube.com/playlist?list=YOUR_PLAYLIST_ID_3"
+    }
+  ],
 
-  // Optional: Custom Playlist Collection for the OptionWheel selector
-  // playlists: [
-  //   { id: "PLBKzzWUn97oauQnvPTOpVa2SoRuF2S61y", name: "रेट्रो टपरी", heroTitle: "रेट्रो टपरी" },
-  //   { id: "RDCLAK5uy_lHpBhjR3PefMmM-_sCM4cWOY6AcpxtCIk", name: "90s Hits", heroTitle: "90s हिट्स" },
-  //   { id: "PLdiU6Sj2X1fUu-qH4n5z5B7P4J-K_tB6P", name: "Chai & Lo-Fi", heroTitle: "चाय और लो-फ़ाई" }
-  // ],
+  // Default active playlist index on load (0 = first playlist above)
+  defaultPlaylistIndex: 0,
 
-  // Devanagari (or custom) hero title displayed in background
-  heroTitle: "लग्जरी रिक्शा",
+  // Display background hero title
   showHeroTitle: true,
 
   // External music & social media URLs
-  youtubeMusicUrl: "https://music.youtube.com/playlist?list=YOUR_PLAYLIST_ID",
   spotifyUrl: "https://open.spotify.com/playlist/YOUR_PLAYLIST_ID",
   instagramUrl: "https://instagram.com/YOUR_HANDLE",
   githubUrl: "https://github.com/YOUR_USERNAME/YOUR_REPO",
