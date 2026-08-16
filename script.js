@@ -34,38 +34,59 @@ const appEnv = window.APP_CONFIG || {};
  *  To add a new playlist:
  *    1. Open the playlist on YouTube Music / YouTube.
  *    2. Copy the "list=" parameter from the URL.
- *    3. Add a new { id, name, youtubeMusicUrl } object below.
- *    4. The OptionWheel slider will pick it up automatically.
+ *    3. Add a new entry below with: id, name, route, bg, bgMobile, youtubeMusicUrl
+ *       - route: the hash segment, e.g. "7" → site.com/#/7
+ *       - bg: desktop background image path (e.g. "assets/bg-p7.webp")
+ *       - bgMobile: mobile background image path
+ *    4. The sidebar will pick up the new playlist automatically.
  * ────────────────────────────────────────────────────────────────────────── */
 const PLAYLISTS = [
   {
     id: "PLdt3vaPZ0jIc",
     name: "1",
+    route: "1",
+    bg: "assets/bg.webp",
+    bgMobile: "assets/bg-mobile.webp",
     youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLdt3vaPZ0jIc&si=5RcvdwFWkxg0Rbul"
   },
   {
     id: "PLKtBDc0rEOfI",
     name: "2",
+    route: "2",
+    bg: "assets/bg.webp",
+    bgMobile: "assets/bg-mobile.webp",
     youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLKtBDc0rEOfI&si=fkP-Ro2RvqwZdLgh"
   },
   {
     id: "PLSUTMNjEr010",
     name: "3",
+    route: "3",
+    bg: "assets/bg.webp",
+    bgMobile: "assets/bg-mobile.webp",
     youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLSUTMNjEr010&si=MLA4Wixk7d0wpKuy"
   },
   {
     id: "PLd-kxLW6FgCk",
     name: "4",
+    route: "4",
+    bg: "assets/bg.webp",
+    bgMobile: "assets/bg-mobile.webp",
     youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLd-kxLW6FgCk&si=T3dXY1B-OpTm8YUb"
   },
   {
     id: "PLM9TSDk-uGcU",
     name: "5",
+    route: "5",
+    bg: "assets/bg.webp",
+    bgMobile: "assets/bg-mobile.webp",
     youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLM9TSDk-uGcU&si=aPy7_lcHH9NM0IGE"
   },
   {
     id: "PLGgr07aatIVk",
     name: "6",
+    route: "6",
+    bg: "assets/bg.webp",
+    bgMobile: "assets/bg-mobile.webp",
     youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLGgr07aatIVk&si=kWzSsdPn3xY5uA0P"
   }
 ];
@@ -237,9 +258,8 @@ function cacheDom() {
   el.queueSearchClear = document.getElementById("queueSearchClear");
   el.queueSearchEmpty = document.getElementById("queueSearchEmpty");
 
-  el.playlistWheelContainer = document.getElementById("playlistWheelContainer");
-  el.playlistWheelMount = document.getElementById("playlistWheelMount");
 }
+
 
 /* ==========================================================================
    4. BOOT
@@ -253,10 +273,11 @@ function initializeApp() {
   initOnlinePill();
   initPresence();
   initLikes();
-  initPlaylistWheel();
+  initRouter();     // sets state.currentPlaylistIndex from URL hash
+  initSidebar();    // builds left sidebar nav
   initWeather();
   initLocationSearch();
-  initBackgroundPhoto();
+  initBackgroundPhoto(); // uses current playlist's bg fields
   generateIllustration();
   generateWaveform();
   initControls();
@@ -412,71 +433,131 @@ function updateLikeButtonUI() {
 }
 
 /* ==========================================================================
-   6c-2. PLAYLIST SELECTOR — Borderless OptionWheel integration
+   6c-2. ROUTER — hash-based playlist routing (#/1, #/2, …)
    ========================================================================== */
 
-function initPlaylistWheel() {
-  if (!el.playlistWheelMount) return;
+function getRouteFromHash() {
+  // Supports both  #/1  and  #1  formats
+  const hash = window.location.hash.replace(/^#\/?/, "").trim();
+  return hash || null;
+}
 
-  // Determine initial selected playlist
-  let defaultIdx = CONFIG.playlists.findIndex((p) => p.id === CONFIG.playlistId);
-  if (defaultIdx < 0) defaultIdx = 0;
-  state.currentPlaylistIndex = defaultIdx;
-  state.currentPlaylistId = CONFIG.playlists[defaultIdx].id;
+function resolvePlaylistFromRoute(route) {
+  if (!route) return PLAYLISTS[0];
+  const found = PLAYLISTS.find((p) => p.route === route);
+  return found || PLAYLISTS[0];
+}
 
-  // Initialize Vanilla JS OptionWheel instance
-  try {
-    if (typeof OptionWheel === "function") {
-      const isMobile = window.innerWidth <= 620;
-      const isTablet = window.innerWidth <= 900;
-      const fontSize = isMobile ? 1.3 : isTablet ? 1.45 : 1.7;
-      const inset = isMobile ? 22 : isTablet ? 30 : 42;
-
-      state.optionWheel = new OptionWheel(el.playlistWheelMount, {
-        items: CONFIG.playlists,
-        defaultSelected: defaultIdx,
-        getItemLabel: (p) => (p && p.name ? p.name : String(p)),
-        side: "left",
-        fontSize: fontSize,
-        spacing: 1.35,
-        curve: 1.0,
-        tilt: 6.5,
-        blur: 2.0,
-        fade: 0.26,
-        minOpacity: 0.06,
-        smoothing: 180,
-        inset: inset,
-        loop: false,
-        draggable: true,
-        soundVolume: 0.4,
-        enableSynthSound: true,
-        onChange: (index, item) => {
-          onPlaylistChange(index, item);
-        }
-      });
-
-      window.addEventListener("resize", () => {
-        if (!state.optionWheel) return;
-        const mob = window.innerWidth <= 620;
-        const tab = window.innerWidth <= 900;
-        state.optionWheel.updateConfig({
-          fontSize: mob ? 1.3 : tab ? 1.45 : 1.7,
-          inset: mob ? 22 : tab ? 30 : 42,
-        });
-      });
-    }
-  } catch (err) {
-    console.error("[OptionWheel] Failed to initialize:", err);
+function navigateToPlaylist(playlist, pushState) {
+  if (!playlist) return;
+  const newHash = "#/" + playlist.route;
+  if (pushState && window.location.hash !== newHash) {
+    window.location.hash = "/" + playlist.route;
   }
+  const index = PLAYLISTS.indexOf(playlist);
+  onPlaylistChange(index, playlist);
+  updateSidebarActiveItem(playlist.route);
+  switchPlaylistBackground(playlist);
+}
+
+function initRouter() {
+  // If no hash at all, redirect to first playlist
+  if (!window.location.hash || window.location.hash === "#" || window.location.hash === "#/") {
+    window.location.replace("#/" + PLAYLISTS[0].route);
+  }
+
+  const route = getRouteFromHash();
+  const playlist = resolvePlaylistFromRoute(route);
+  const index = PLAYLISTS.indexOf(playlist);
+
+  state.currentPlaylistIndex = index;
+  state.currentPlaylistId = playlist.id;
+  CONFIG.playlistId = playlist.id;
+  CONFIG.youtubeMusicUrl = playlist.youtubeMusicUrl || "";
+
+  // Listen for back/forward navigation
+  window.addEventListener("hashchange", () => {
+    const r = getRouteFromHash();
+    const p = resolvePlaylistFromRoute(r);
+    navigateToPlaylist(p, false);
+  });
+}
+
+/* ==========================================================================
+   6c-3. SIDEBAR — left-edge playlist navigator
+   ========================================================================== */
+
+function initSidebar() {
+  const sidebar = document.getElementById("playlistSidebar");
+  if (!sidebar) return;
+
+  const list = document.getElementById("sidebarList");
+  const toggle = document.getElementById("sidebarToggle");
+  const backdrop = document.getElementById("sidebarBackdrop");
+  if (!list || !toggle || !backdrop) return;
+
+  // Build list items
+  PLAYLISTS.forEach((playlist, idx) => {
+    const btn = document.createElement("button");
+    btn.className = "sidebar-item";
+    btn.setAttribute("data-route", playlist.route);
+    btn.setAttribute("aria-label", "Playlist " + playlist.name);
+    btn.innerHTML = `
+      <span class="sidebar-item-num">${playlist.name}</span>
+      <span class="sidebar-item-label">Playlist ${playlist.name}</span>
+    `;
+    if (playlist.id === state.currentPlaylistId) {
+      btn.classList.add("is-active");
+    }
+    btn.addEventListener("click", () => {
+      closeSidebar();
+      navigateToPlaylist(playlist, true);
+    });
+    list.appendChild(btn);
+  });
+
+  toggle.addEventListener("click", () => {
+    const isOpen = sidebar.classList.contains("is-open");
+    if (isOpen) closeSidebar(); else openSidebar();
+  });
+
+  backdrop.addEventListener("click", closeSidebar);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeSidebar();
+  });
+}
+
+function openSidebar() {
+  const sidebar = document.getElementById("playlistSidebar");
+  const backdrop = document.getElementById("sidebarBackdrop");
+  if (!sidebar) return;
+  sidebar.classList.add("is-open");
+  if (backdrop) backdrop.classList.add("is-open");
+  document.getElementById("sidebarToggle")?.setAttribute("aria-expanded", "true");
+}
+
+function closeSidebar() {
+  const sidebar = document.getElementById("playlistSidebar");
+  const backdrop = document.getElementById("sidebarBackdrop");
+  if (!sidebar) return;
+  sidebar.classList.remove("is-open");
+  if (backdrop) backdrop.classList.remove("is-open");
+  document.getElementById("sidebarToggle")?.setAttribute("aria-expanded", "false");
+}
+
+function updateSidebarActiveItem(route) {
+  const items = document.querySelectorAll(".sidebar-item");
+  items.forEach((btn) => {
+    btn.classList.toggle("is-active", btn.dataset.route === route);
+  });
 }
 
 function onPlaylistChange(index, playlist) {
   if (!playlist) return;
-  console.log("[playlist] Switch requested → index:", index, "name:", playlist.name, "id:", playlist.id);
   state.currentPlaylistIndex = index;
 
   if (playlist.id === state.currentPlaylistId && state.playerReady) {
-    console.log("[playlist] Same playlist already loaded, skipping.");
     return;
   }
 
@@ -492,15 +573,11 @@ function onPlaylistChange(index, playlist) {
 
   // Switch playlist in YouTube Player
   if (state.player && state.playerReady && state.player.loadPlaylist) {
-    // Invalidate any in-flight watchdog from a previous switch and clear the
-    // stale now-playing UI immediately — otherwise the old track's title,
-    // artwork, and progress bar keep showing while (or if) the new playlist
-    // silently fails to load, which looks exactly like "nothing happened".
     const switchToken = ++state.playlistSwitchToken;
     clearPlaylistSwitchWatchdog();
     resetNowPlayingForSwitch();
 
-    showStatus("Loading " + playlist.name + "…", { loading: true });
+    showStatus("Loading " + playlist.name + "\u2026", { loading: true });
     state.consecutiveErrors = 0;
     state.queueIds = [];
     state.queueMeta = {};
@@ -508,56 +585,30 @@ function onPlaylistChange(index, playlist) {
 
     let loadSucceeded = false;
     try {
-      console.log("[playlist] Calling loadPlaylist({ list:", playlist.id, ", listType: 'playlist' })");
-      state.player.loadPlaylist({
-        list: playlist.id,
-        listType: "playlist",
-        index: 0,
-        suggestedQuality: "small"
-      });
+      state.player.loadPlaylist(playlist.id, 0, 0, "small");
       loadSucceeded = true;
     } catch (e) {
-      console.warn("[playlist] loadPlaylist object form failed:", e);
       try {
-        state.player.loadPlaylist(playlist.id, 0, 0);
+        state.player.loadPlaylist({ list: playlist.id, listType: "playlist", index: 0 });
         loadSucceeded = true;
       } catch (err) {
-        console.warn("[player] loadPlaylist positional form also failed:", err);
+        console.warn("[player] loadPlaylist failed:", err);
       }
     }
 
     if (loadSucceeded) {
-      console.log("[playlist] loadPlaylist call succeeded for:", playlist.name);
       state.userWantsPlayback = true;
       enableBackgroundAudioSession();
       setTimeout(() => {
         if (state.currentPlaylistId === playlist.id && state.userWantsPlayback && state.player && state.player.playVideo) {
-          try {
-            state.player.playVideo();
-          } catch (err) { }
+          try { state.player.playVideo(); } catch (err) { }
         }
       }, 400);
-
-      // After 2 seconds, log what playlist the player actually loaded
-      setTimeout(() => {
-        if (state.player && state.player.getPlaylist) {
-          const loadedList = state.player.getPlaylist();
-          console.log("[playlist] After 2s — player has", loadedList ? loadedList.length : 0, "videos in queue for:", playlist.name);
-          if (loadedList && loadedList.length > 0) {
-            console.log("[playlist] First 3 video IDs:", loadedList.slice(0, 3));
-          }
-        }
-      }, 2000);
     }
 
-    // Some restricted/unavailable playlists never fire onStateChange or
-    // onError at all — the player just sits there forever. Watch for that
-    // and surface a real error instead of leaving the UI stuck on
-    // "Loading…" with the previous playlist's stale track underneath.
     state.playlistSwitchWatchdog = setTimeout(() => {
-      if (switchToken !== state.playlistSwitchToken) return; // superseded by a newer switch
-      if (state.currentVideoId) return; // metadata arrived — switch succeeded
-
+      if (switchToken !== state.playlistSwitchToken) return;
+      if (state.currentVideoId) return;
       const currentList = state.player && state.player.getPlaylist ? state.player.getPlaylist() : null;
       if (!currentList || currentList.length === 0) {
         showStatus("Couldn't load \u201c" + playlist.name + "\u201d. It may be private, empty, or unavailable.", { error: true });
@@ -565,8 +616,6 @@ function onPlaylistChange(index, playlist) {
         showStatus("\u201c" + playlist.name + "\u201d isn't playable right now. Try another playlist.", { error: true });
       }
     }, 7000);
-  } else {
-    console.warn("[playlist] Player not ready — cannot switch. playerReady:", state.playerReady);
   }
 }
 
@@ -829,47 +878,67 @@ function initHeroTitle() {
    8. BACKGROUND — static photo + procedural illustration
    ========================================================================== */
 
+/* Resolves desktop + mobile background from current playlist's config,
+   falling back to CONFIG values if the playlist doesn't define its own. */
+function getCurrentPlaylistBg(isMobileVP) {
+  const playlist = PLAYLISTS[state.currentPlaylistIndex] || PLAYLISTS[0];
+  if (isMobileVP) {
+    return playlist.bgMobile || playlist.bg || CONFIG.backgroundImageMobile || CONFIG.backgroundImage || "";
+  }
+  return playlist.bg || CONFIG.backgroundImage || "";
+}
+
+const _mobileQuery = window.matchMedia("(max-width: 620px)");
+
+function loadBgInto(targetEl, src) {
+  if (!src || !targetEl) return;
+  // If already showing this exact image, skip the decode round-trip
+  if (targetEl.dataset.loadedSrc === src) {
+    targetEl.classList.add("is-visible");
+    return;
+  }
+  const img = new Image();
+  img.onload = () => {
+    targetEl.style.backgroundImage = `url("${src}")`;
+    targetEl.dataset.loadedSrc = src;
+    targetEl.classList.add("is-visible");
+    const ill = document.getElementById("bgIllustration");
+    if (ill) ill.style.opacity = "0";
+  };
+  img.onerror = () => console.warn(`[bg] Could not load "${src}".`);
+  img.src = src;
+}
+
+function applyBackgroundForViewport() {
+  const useMobile = _mobileQuery.matches;
+  const src = getCurrentPlaylistBg(useMobile);
+  const targetEl = useMobile ? el.bgPhotoMobile : el.bgPhoto;
+  const otherEl  = useMobile ? el.bgPhoto : el.bgPhotoMobile;
+  if (otherEl) otherEl.classList.remove("is-visible");
+  loadBgInto(targetEl, src);
+}
+
 function initBackgroundPhoto() {
-  if (!CONFIG.backgroundImage && !CONFIG.backgroundImageMobile) return;
+  applyBackgroundForViewport();
+  _mobileQuery.addEventListener("change", applyBackgroundForViewport);
+}
 
-  const mobileQuery = window.matchMedia("(max-width: 620px)");
-
-  function loadInto(targetEl, src) {
-    if (!src) return;
-    const img = new Image();
-    img.onload = () => {
-      targetEl.style.backgroundImage = `url("${src}")`;
-      targetEl.classList.add("is-visible");
-      document.getElementById("bgIllustration").style.opacity = "0";
-    };
-    img.onerror = () => {
-      console.warn(`[player] Could not load background "${src}".`);
-    };
-    img.src = src;
+function switchPlaylistBackground(playlist) {
+  // Update CONFIG for any legacy callers, then reload bg
+  if (playlist) {
+    CONFIG.backgroundImage = playlist.bg || CONFIG.backgroundImage;
+    CONFIG.backgroundImageMobile = playlist.bgMobile || playlist.bg || CONFIG.backgroundImageMobile;
   }
-
-  function applyForViewport() {
-    const useMobile = mobileQuery.matches && CONFIG.backgroundImageMobile;
-    const src = useMobile ? CONFIG.backgroundImageMobile : CONFIG.backgroundImage;
-    const targetEl = useMobile ? el.bgPhotoMobile : el.bgPhoto;
-    const otherEl = useMobile ? el.bgPhoto : el.bgPhotoMobile;
-
-    if (!src) return;
-
-    otherEl.classList.remove("is-visible");
-
-    if (targetEl.style.backgroundImage.includes(src)) {
-      // Bytes are already loaded on this element from an earlier viewport
-      // switch — just re-show it, no need to re-fetch/decode the image.
-      targetEl.classList.add("is-visible");
-      return;
-    }
-
-    loadInto(targetEl, src);
-  }
-
-  applyForViewport();
-  mobileQuery.addEventListener("change", applyForViewport);
+  // Brief fade-out then fade-in via CSS transitions on .bg-photo
+  [el.bgPhoto, el.bgPhotoMobile].forEach((ph) => {
+    if (ph) ph.style.opacity = "0";
+  });
+  setTimeout(() => {
+    [el.bgPhoto, el.bgPhotoMobile].forEach((ph) => {
+      if (ph) { ph.dataset.loadedSrc = ""; ph.style.opacity = ""; }
+    });
+    applyBackgroundForViewport();
+  }, 350);
 }
 
 function seededRandom(seed) {

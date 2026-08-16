@@ -126,11 +126,28 @@
   </div>
 
   <!-- ============================================================
-       LEFT-SIDE: PLAYLIST SELECTOR (BORDERLESS CURVED OPTION WHEEL)
+       LEFT SIDEBAR: PLAYLIST SELECTOR
   ============================================================= -->
-  <div class="playlist-wheel-container" id="playlistWheelContainer" aria-label="Playlist selector">
-    <div class="playlist-wheel-mount" id="playlistWheelMount"></div>
-  </div>
+  <!-- Backdrop: closes sidebar when clicked -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+
+  <!-- Sidebar panel -->
+  <nav class="playlist-sidebar" id="playlistSidebar" aria-label="Playlist selector">
+    <!-- Toggle tab (always visible on left edge) -->
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Open playlist menu"
+      aria-expanded="false" aria-controls="sidebarList">
+      <span class="sidebar-toggle-lines" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </span>
+      <span class="sidebar-toggle-label">Playlists</span>
+    </button>
+
+    <!-- Scrollable list (built by initSidebar() in script.js) -->
+    <div class="sidebar-inner">
+      <p class="sidebar-heading">Playlists</p>
+      <ul class="sidebar-list" id="sidebarList" role="list"></ul>
+    </div>
+  </nav>
 
   <!-- ============================================================
        TOP-RIGHT: LIKE + ONLINE + SOCIAL LINKS
@@ -311,7 +328,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   <script src="config.js"></script>
-  <script src="OptionWheel.js"></script>
   <script src="script.js"></script>
 </body>
 
