@@ -1,8 +1,21 @@
 {
   "name": "Vibe with Me",
-  "short_name": "Vibe With Me",  
+  "short_name": "Vibe With Me",
   "display": "standalone",
   "background_color": "#200b09",
   "theme_color": "#200b09",
-  "icons": []
+  "icons": [
+    {
+      "src": "assets/favicon/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/favicon/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
 }
