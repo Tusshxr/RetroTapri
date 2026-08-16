@@ -96,7 +96,7 @@ const CONFIG = {
   defaultPlaylistIndex: 0,
   playlistId: PLAYLISTS[0].id,
 
-  heroTitle: appEnv.heroTitle || "रेट्रो टपरी",
+  heroTitle: appEnv.heroTitle || "Vibe with Me",
   showHeroTitle: appEnv.showHeroTitle ?? true,
 
   youtubeMusicUrl: PLAYLISTS[0].youtubeMusicUrl || "",
