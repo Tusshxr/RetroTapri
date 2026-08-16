@@ -42,53 +42,53 @@ const appEnv = window.APP_CONFIG || {};
  * ────────────────────────────────────────────────────────────────────────── */
 const PLAYLISTS = [
   {
-    id: "PLdt3vaPZ0jIc",
-    name: "1",
+    id: "RDCLAK5uy_kr3pcLM0Dc_A9wvxCj0vVjob3maWg1WgA",
+    name: "Honey Singh",
     route: "1",
     bg: "assets/bg.webp",
     bgMobile: "assets/bg-mobile.webp",
-    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLdt3vaPZ0jIc&si=5RcvdwFWkxg0Rbul"
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=RDCLAK5uy_kr3pcLM0Dc_A9wvxCj0vVjob3maWg1WgA&playnext=1&si=dBmgtq1crRbfSzHJ"
   },
   {
-    id: "PLKtBDc0rEOfI",
-    name: "2",
+    id: "OLAK5uy_mC3mlANeMzHXt0NXx4n_Yt1ZZyZRM3AbA",
+    name: "alka yagnik",
     route: "2",
     bg: "assets/bg.webp",
     bgMobile: "assets/bg-mobile.webp",
-    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLKtBDc0rEOfI&si=fkP-Ro2RvqwZdLgh"
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=OLAK5uy_mC3mlANeMzHXt0NXx4n_Yt1ZZyZRM3AbA&si=9w767l3tdqa9yxbN"
   },
   {
-    id: "PLSUTMNjEr010",
-    name: "3",
+    id: "RDCLAK5uy_not6oaCYghpBvL86A9_e2hmsqwolSO3_s",
+    name: "Kumar sanu",
     route: "3",
     bg: "assets/bg.webp",
     bgMobile: "assets/bg-mobile.webp",
-    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLSUTMNjEr010&si=MLA4Wixk7d0wpKuy"
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=RDCLAK5uy_not6oaCYghpBvL86A9_e2hmsqwolSO3_s&playnext=1&si=gekT1MJdWVWREsar"
   },
   {
-    id: "PLd-kxLW6FgCk",
-    name: "4",
+    id: "OLAK5uy_mzpVwrCgdSx1-g2_4TKUQ6kt8skWHDlB0",
+    name: "Kishor Kumar",
     route: "4",
     bg: "assets/bg.webp",
     bgMobile: "assets/bg-mobile.webp",
-    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLd-kxLW6FgCk&si=T3dXY1B-OpTm8YUb"
+    youtubeMusicUrl: "https://music.youtube.com/playlist?list=OLAK5uy_mzpVwrCgdSx1-g2_4TKUQ6kt8skWHDlB0&si=0XnR3t7CG0ksdMF0"
   },
-  {
-    id: "PLM9TSDk-uGcU",
-    name: "5",
-    route: "5",
-    bg: "assets/bg.webp",
-    bgMobile: "assets/bg-mobile.webp",
-    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLM9TSDk-uGcU&si=aPy7_lcHH9NM0IGE"
-  },
-  {
-    id: "PLGgr07aatIVk",
-    name: "6",
-    route: "6",
-    bg: "assets/bg.webp",
-    bgMobile: "assets/bg-mobile.webp",
-    youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLGgr07aatIVk&si=kWzSsdPn3xY5uA0P"
-  }
+  // {
+  //   id: "PLM9TSDk-uGcU",
+  //   name: "5",
+  //   route: "5",
+  //   bg: "assets/bg.webp",
+  //   bgMobile: "assets/bg-mobile.webp",
+  //   youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLM9TSDk-uGcU&si=aPy7_lcHH9NM0IGE"
+  // },
+  // {
+  //   id: "PLGgr07aatIVk",
+  //   name: "6",
+  //   route: "6",
+  //   bg: "assets/bg.webp",
+  //   bgMobile: "assets/bg-mobile.webp",
+  //   youtubeMusicUrl: "https://music.youtube.com/playlist?list=PLGgr07aatIVk&si=kWzSsdPn3xY5uA0P"
+  // }
 ];
 
 const CONFIG = {
