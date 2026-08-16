@@ -1607,17 +1607,20 @@ img {
   .service-nav {
     top: 12px;
     right: 12px;
-    gap: 8px;
+    gap: 6px;
   }
 
   .like-pill {
-    display: none;
+    display: flex;
+    padding: 5px 9px;
+    font-size: 11px;
+    gap: 4px;
   }
 
   .online-pill {
-    padding: 6px 10px;
-    font-size: 11.5px;
-    gap: 6px;
+    padding: 5px 8px;
+    font-size: 11px;
+    gap: 5px;
   }
 
   .nav-service-link {

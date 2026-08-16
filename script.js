@@ -372,9 +372,18 @@ function initPresence() {
    ========================================================================== */
 
 function bindPlaylistLikes(playlistId) {
+  const localKey = "rickshaw_liked_" + playlistId;
+  const countKey = "rickshaw_likes_count_" + playlistId;
+  state.hasLiked = localStorage.getItem(localKey) === "1";
+  updateLikeButtonUI();
+
   try {
     const app = getFirebaseApp();
-    if (!app) return;
+    if (!app) {
+      const localCount = parseInt(localStorage.getItem(countKey) || "0", 10);
+      if (el.likeCount) el.likeCount.textContent = localCount;
+      return;
+    }
 
     const db = firebase.database();
     if (state.currentLikeRef && state.likeCountListener) {
@@ -383,18 +392,18 @@ function bindPlaylistLikes(playlistId) {
 
     const countRef = db.ref("likes/" + playlistId + "/count");
     state.currentLikeRef = countRef;
-    const localKey = "rickshaw_liked_" + playlistId;
 
     state.likeCountListener = (snap) => {
       const value = snap.val();
-      if (el.likeCount) el.likeCount.textContent = typeof value === "number" ? value : 0;
+      const num = typeof value === "number" ? value : 0;
+      if (el.likeCount) el.likeCount.textContent = num;
+      localStorage.setItem(countKey, String(num));
     };
     countRef.on("value", state.likeCountListener);
-
-    state.hasLiked = localStorage.getItem(localKey) === "1";
-    updateLikeButtonUI();
   } catch (err) {
     console.warn("[firebase] Likes bind failed:", err);
+    const localCount = parseInt(localStorage.getItem(countKey) || "0", 10);
+    if (el.likeCount) el.likeCount.textContent = localCount;
   }
 }
 
@@ -403,23 +412,40 @@ function initLikes() {
 
   if (el.likeBtn) {
     el.likeBtn.addEventListener("click", () => {
+      const playlistId = CONFIG.playlistId || (PLAYLISTS[state.currentPlaylistIndex] && PLAYLISTS[state.currentPlaylistIndex].id) || "main";
+      const localKey = "rickshaw_liked_" + playlistId;
+      const countKey = "rickshaw_likes_count_" + playlistId;
+
       try {
         const app = getFirebaseApp();
-        if (!app || !state.currentLikeRef) return;
-        const localKey = "rickshaw_liked_" + CONFIG.playlistId;
-
-        if (state.hasLiked) {
-          state.currentLikeRef.transaction((current) => Math.max(0, (current || 0) - 1));
-          localStorage.removeItem(localKey);
-          state.hasLiked = false;
+        if (app && state.currentLikeRef) {
+          if (state.hasLiked) {
+            state.currentLikeRef.transaction((current) => Math.max(0, (current || 0) - 1));
+            localStorage.removeItem(localKey);
+            state.hasLiked = false;
+          } else {
+            state.currentLikeRef.transaction((current) => (current || 0) + 1);
+            localStorage.setItem(localKey, "1");
+            state.hasLiked = true;
+          }
         } else {
-          state.currentLikeRef.transaction((current) => (current || 0) + 1);
-          localStorage.setItem(localKey, "1");
-          state.hasLiked = true;
+          // Fallback when Firebase is not active
+          let curCount = parseInt(localStorage.getItem(countKey) || "0", 10);
+          if (state.hasLiked) {
+            curCount = Math.max(0, curCount - 1);
+            localStorage.removeItem(localKey);
+            state.hasLiked = false;
+          } else {
+            curCount += 1;
+            localStorage.setItem(localKey, "1");
+            state.hasLiked = true;
+          }
+          localStorage.setItem(countKey, String(curCount));
+          if (el.likeCount) el.likeCount.textContent = curCount;
         }
         updateLikeButtonUI();
       } catch (err) {
-        console.warn("[firebase] Like transaction failed:", err);
+        console.warn("[firebase] Like action failed:", err);
       }
     });
   }
