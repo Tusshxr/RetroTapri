@@ -1555,25 +1555,47 @@ function playNext() {
   if (!state.player || !state.playerReady) return;
   state.userWantsPlayback = true;
   enableBackgroundAudioSession();
-  state.player.nextVideo();
+  try {
+    state.player.nextVideo();
+  } catch (err) {
+    console.warn("[player] nextVideo failed:", err);
+  }
 }
 
 function playPrevious() {
   if (!state.player || !state.playerReady) return;
   state.userWantsPlayback = true;
   enableBackgroundAudioSession();
-  const elapsed = state.player.getCurrentTime ? state.player.getCurrentTime() : 0;
-  if (elapsed > 3) {
-    state.player.seekTo(0, true);
-  } else {
-    state.player.previousVideo();
+  try {
+    const elapsed = state.player.getCurrentTime ? state.player.getCurrentTime() : 0;
+    if (elapsed > 3) {
+      state.player.seekTo(0, true);
+      paintProgress(0, state.duration || 0);
+    } else {
+      state.player.previousVideo();
+    }
+  } catch (err) {
+    console.warn("[player] previousVideo failed:", err);
   }
 }
 
+function getActiveDuration() {
+  return (state.player && state.player.getDuration && state.player.getDuration()) || state.duration || 0;
+}
+
 function seekTo(fractionOrSeconds, isFraction) {
-  if (!state.player || !state.duration) return;
-  const seconds = isFraction ? fractionOrSeconds * state.duration : fractionOrSeconds;
-  state.player.seekTo(Math.max(0, Math.min(seconds, state.duration)), true);
+  if (!state.player) return;
+  const duration = getActiveDuration();
+  if (!duration) return;
+  state.duration = duration;
+  const seconds = isFraction ? fractionOrSeconds * duration : fractionOrSeconds;
+  const clamped = Math.max(0, Math.min(seconds, duration));
+  try {
+    state.player.seekTo(clamped, true);
+    paintProgress(clamped, duration);
+  } catch (err) {
+    console.warn("[player] seekTo failed:", err);
+  }
 }
 
 /* ==========================================================================
@@ -1626,26 +1648,38 @@ function initProgressBarInteraction() {
 
   function fractionFromEvent(e) {
     const rect = el.progressTrack.getBoundingClientRect();
-    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-    return Math.max(0, Math.min(1, x / rect.width));
+    let clientX = e.clientX;
+    if (clientX === undefined && e.touches && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+    } else if (clientX === undefined && e.changedTouches && e.changedTouches.length > 0) {
+      clientX = e.changedTouches[0].clientX;
+    }
+    if (clientX === undefined) clientX = rect.left;
+    const x = clientX - rect.left;
+    return Math.max(0, Math.min(1, x / (rect.width || 1)));
   }
 
   function onPointerDown(e) {
-    if (!state.duration) return;
+    const duration = getActiveDuration();
+    if (!duration) return;
     dragging = true;
     state.isSeeking = true;
     const fraction = fractionFromEvent(e);
-    paintProgress(fraction * state.duration, state.duration);
+    paintProgress(fraction * duration, duration);
     if (el.progressTrack.setPointerCapture && e.pointerId != null) {
       activePointerId = e.pointerId;
-      el.progressTrack.setPointerCapture(e.pointerId);
+      try {
+        el.progressTrack.setPointerCapture(e.pointerId);
+      } catch (err) {}
     }
   }
 
   function onPointerMove(e) {
     if (!dragging) return;
+    const duration = getActiveDuration();
+    if (!duration) return;
     const fraction = fractionFromEvent(e);
-    paintProgress(fraction * state.duration, state.duration);
+    paintProgress(fraction * duration, duration);
   }
 
   function onPointerUp(e) {
@@ -1658,25 +1692,48 @@ function initProgressBarInteraction() {
     if (el.progressTrack.releasePointerCapture && activePointerId != null) {
       try {
         el.progressTrack.releasePointerCapture(activePointerId);
-      } catch (err) {
-        /* already released — safe to ignore */
-      }
+      } catch (err) {}
       activePointerId = null;
     }
   }
 
+  // Pointer & Touch scrub listeners
   el.progressTrack.addEventListener("pointerdown", onPointerDown);
   window.addEventListener("pointermove", onPointerMove);
   window.addEventListener("pointerup", onPointerUp);
+  window.addEventListener("pointercancel", onPointerUp);
+
+  // Click on progressTrack directly for tap-to-seek
+  el.progressTrack.addEventListener("click", (e) => {
+    const duration = getActiveDuration();
+    if (!duration) return;
+    const fraction = fractionFromEvent(e);
+    seekTo(fraction, true);
+  });
+
+  // Touch fallback
+  el.progressTrack.addEventListener("touchstart", (e) => {
+    onPointerDown(e);
+  }, { passive: true });
+
+  window.addEventListener("touchmove", (e) => {
+    if (dragging) onPointerMove(e);
+  }, { passive: true });
+
+  window.addEventListener("touchend", (e) => {
+    if (dragging) onPointerUp(e);
+  }, { passive: true });
 
   el.progressTrack.addEventListener("keydown", (e) => {
-    if (!state.duration) return;
+    const duration = getActiveDuration();
+    if (!duration) return;
+    const cur = (state.player && state.player.getCurrentTime && state.player.getCurrentTime()) || 0;
     if (e.key === "ArrowRight") {
       e.preventDefault();
-      seekTo(Math.min(state.duration, (state.player.getCurrentTime() || 0) + 5));
+      seekTo(Math.min(duration, cur + 5));
     } else if (e.key === "ArrowLeft") {
       e.preventDefault();
-      seekTo(Math.max(0, (state.player.getCurrentTime() || 0) - 5));
+      seekTo(Math.max(0, cur - 5));
     }
   });
 }

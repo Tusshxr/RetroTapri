@@ -918,6 +918,7 @@ img {
   width: 100%;
   display: flex;
   align-items: center;
+  touch-action: none;
 }
 
 .progress-track {
@@ -927,6 +928,19 @@ img {
   display: flex;
   align-items: center;
   cursor: pointer;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.progress-track::after {
+  content: "";
+  position: absolute;
+  top: -14px;
+  bottom: -14px;
+  left: 0;
+  right: 0;
+  z-index: 5;
 }
 
 .progress-track::before {
@@ -1712,15 +1726,27 @@ img {
   .progress-row {
     margin-top: 4px;
     width: 100%;
+    touch-action: none;
   }
 
   .progress-track {
-    height: 12px;
+    height: 14px;
+    touch-action: none;
+  }
+
+  .progress-track::after {
+    content: "";
+    position: absolute;
+    top: -12px;
+    bottom: -12px;
+    left: -4px;
+    right: -4px;
+    z-index: 5;
   }
 
   .progress-handle {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
   }
 
   .time-row {
@@ -1738,18 +1764,27 @@ img {
     flex: none;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     margin-left: 0;
   }
 
   .ctrl-btn {
-    width: 26px;
-    height: 26px;
+    width: 34px;
+    height: 34px;
+    padding: 6px;
+    position: relative;
+    touch-action: manipulation;
+  }
+
+  .ctrl-btn::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
   }
 
   .ctrl-btn svg {
-    width: 15px;
-    height: 15px;
+    width: 18px;
+    height: 18px;
   }
 
   .shuffle-btn,
@@ -1758,13 +1793,14 @@ img {
   }
 
   .play-btn {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
+    touch-action: manipulation;
   }
 
   .play-btn svg {
-    width: 19px;
-    height: 19px;
+    width: 22px;
+    height: 22px;
   }
 }
 
