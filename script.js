@@ -451,9 +451,24 @@ function resolvePlaylistFromRoute(route) {
 function navigateToPlaylist(playlist, pushState) {
   if (!playlist) return;
   const newHash = "#/" + playlist.route;
-  if (pushState && window.location.hash !== newHash) {
-    window.location.hash = "/" + playlist.route;
+
+  if (pushState) {
+    // Setting the hash fires hashchange asynchronously, which calls this
+    // function again with pushState=false.  Return here so the actual
+    // playlist switch happens exactly once, from the hashchange handler.
+    if (window.location.hash !== newHash) {
+      window.location.hash = "/" + playlist.route;
+    } else {
+      // Hash is already correct (user re-clicked the active item) — run
+      // the switch directly since hashchange won't fire.
+      const index = PLAYLISTS.indexOf(playlist);
+      onPlaylistChange(index, playlist);
+      updateSidebarActiveItem(playlist.route);
+      switchPlaylistBackground(playlist);
+    }
+    return;
   }
+
   const index = PLAYLISTS.indexOf(playlist);
   onPlaylistChange(index, playlist);
   updateSidebarActiveItem(playlist.route);
@@ -555,12 +570,9 @@ function updateSidebarActiveItem(route) {
 
 function onPlaylistChange(index, playlist) {
   if (!playlist) return;
+
+  const isSamePlaylist = playlist.id === state.currentPlaylistId;
   state.currentPlaylistIndex = index;
-
-  if (playlist.id === state.currentPlaylistId && state.playerReady) {
-    return;
-  }
-
   state.currentPlaylistId = playlist.id;
   CONFIG.playlistId = playlist.id;
 
@@ -569,54 +581,69 @@ function onPlaylistChange(index, playlist) {
   }
 
   bindPlaylistLikes(playlist.id);
+
+  // If player is not ready yet, the IDs are synced above and the
+  // player will use CONFIG.playlistId when it boots — nothing else to do.
+  if (!state.player || !state.playerReady) return;
+
+  // Same playlist is already playing — nothing to do.
+  if (isSamePlaylist) return;
+
   showToast("Playing: " + playlist.name);
 
-  // Switch playlist in YouTube Player
-  if (state.player && state.playerReady && state.player.loadPlaylist) {
-    const switchToken = ++state.playlistSwitchToken;
-    clearPlaylistSwitchWatchdog();
-    resetNowPlayingForSwitch();
+  const switchToken = ++state.playlistSwitchToken;
+  clearPlaylistSwitchWatchdog();
+  resetNowPlayingForSwitch();
 
-    showStatus("Loading " + playlist.name + "\u2026", { loading: true });
-    state.consecutiveErrors = 0;
-    state.queueIds = [];
-    state.queueMeta = {};
-    if (el.queueList) el.queueList.replaceChildren();
+  showStatus("Loading " + playlist.name + "\u2026", { loading: true });
+  state.consecutiveErrors = 0;
+  state.queueIds = [];
+  state.queueMeta = {};
+  if (el.queueList) el.queueList.replaceChildren();
 
-    let loadSucceeded = false;
+  // Force-stop the current track so the old audio definitely ends.
+  try { state.player.stopVideo(); } catch (e) {}
+
+  // Give the player a brief moment to settle after stopping before we
+  // ask it to load a completely new playlist context.
+  setTimeout(() => {
+    if (state.playlistSwitchToken !== switchToken) return; // superseded
+
     try {
-      state.player.loadPlaylist(playlist.id, 0, 0, "small");
-      loadSucceeded = true;
+      // Always use the object form — passing a bare string treats it as a
+      // single video ID, which silently fails for playlist IDs.
+      state.player.loadPlaylist({
+        list: playlist.id,
+        listType: "playlist",
+        index: 0
+      });
     } catch (e) {
-      try {
-        state.player.loadPlaylist({ list: playlist.id, listType: "playlist", index: 0 });
-        loadSucceeded = true;
-      } catch (err) {
-        console.warn("[player] loadPlaylist failed:", err);
-      }
+      console.warn("[player] loadPlaylist failed:", e);
+      showStatus("Couldn't load \u201c" + playlist.name + "\u201d.", { error: true });
+      return;
     }
 
-    if (loadSucceeded) {
-      state.userWantsPlayback = true;
-      enableBackgroundAudioSession();
-      setTimeout(() => {
-        if (state.currentPlaylistId === playlist.id && state.userWantsPlayback && state.player && state.player.playVideo) {
-          try { state.player.playVideo(); } catch (err) { }
-        }
-      }, 400);
-    }
+    state.userWantsPlayback = true;
+    enableBackgroundAudioSession();
 
-    state.playlistSwitchWatchdog = setTimeout(() => {
-      if (switchToken !== state.playlistSwitchToken) return;
-      if (state.currentVideoId) return;
-      const currentList = state.player && state.player.getPlaylist ? state.player.getPlaylist() : null;
-      if (!currentList || currentList.length === 0) {
-        showStatus("Couldn't load \u201c" + playlist.name + "\u201d. It may be private, empty, or unavailable.", { error: true });
-      } else {
-        showStatus("\u201c" + playlist.name + "\u201d isn't playable right now. Try another playlist.", { error: true });
-      }
-    }, 7000);
-  }
+    // Nudge playVideo after the playlist has had time to queue up.
+    setTimeout(() => {
+      if (state.playlistSwitchToken !== switchToken) return;
+      try { state.player.playVideo(); } catch (err) {}
+    }, 600);
+  }, 200);
+
+  // Watchdog: if no metadata arrives within 10 s, surface an error.
+  state.playlistSwitchWatchdog = setTimeout(() => {
+    if (switchToken !== state.playlistSwitchToken) return;
+    if (state.currentVideoId) return; // metadata arrived — all good
+    const loadedList = state.player && state.player.getPlaylist ? state.player.getPlaylist() : null;
+    if (!loadedList || loadedList.length === 0) {
+      showStatus("Couldn't load \u201c" + playlist.name + "\u201d. It may be private or unavailable.", { error: true });
+    } else {
+      showStatus("\u201c" + playlist.name + "\u201d isn't playable right now.", { error: true });
+    }
+  }, 10000);
 }
 
 /* ==========================================================================

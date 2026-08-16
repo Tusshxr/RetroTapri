@@ -749,6 +749,16 @@ img {
   }
 }
 
+/* Mobile override for playerEnter — shift right by half the sidebar width */
+@media (max-width: 620px) {
+  @keyframes playerEnter {
+    to {
+      transform: translate(calc(-50% + 18px), 0);
+      opacity: 1;
+    }
+  }
+}
+
 .player:hover {
   box-shadow: 0 28px 75px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
@@ -1645,7 +1655,10 @@ img {
   /* ---- Floating Player Bar: Horizontal Pill Capsule Matching Image 2 ---- */
   .player {
     bottom: 16px;
-    width: min(420px, 92vw);
+    /* Shift right by half the sidebar toggle width (36px) so the pill
+       doesn't overlap the hamburger tab on the left edge. */
+    width: min(420px, calc(92vw - 18px));
+    transform: translate(calc(-50% + 18px), 0);
     min-height: 82px;
     flex-direction: row;
     align-items: center;
