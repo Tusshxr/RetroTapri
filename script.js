@@ -35,7 +35,7 @@ const appEnv = window.APP_CONFIG || {};
  *    1. Open the playlist on YouTube Music / YouTube.
  *    2. Copy the "list=" parameter from the URL.
  *    3. Add a new entry below with: id, name, route, bg, bgMobile, youtubeMusicUrl
- *       - route: the hash segment, e.g. "honey-singh" → site.com/#/honey-singh
+ *       - route: the hash segment, e.g. "7" → site.com/#/7
  *       - bg: desktop background image path (e.g. "assets/bg-p7.webp")
  *       - bgMobile: mobile background image path
  *    4. The sidebar will pick up the new playlist automatically.
@@ -44,7 +44,7 @@ const PLAYLISTS = [
   {
     id: "RDCLAK5uy_kr3pcLM0Dc_A9wvxCj0vVjob3maWg1WgA",
     name: "Honey Singh",
-    route: "honey-singh",
+    route: "1",
     bg: "assets/bg.webp",
     bgMobile: "assets/bg-mobile.webp",
     youtubeMusicUrl: "https://music.youtube.com/playlist?list=RDCLAK5uy_kr3pcLM0Dc_A9wvxCj0vVjob3maWg1WgA&playnext=1&si=dBmgtq1crRbfSzHJ"
@@ -52,7 +52,7 @@ const PLAYLISTS = [
   {
     id: "OLAK5uy_mC3mlANeMzHXt0NXx4n_Yt1ZZyZRM3AbA",
     name: "alka yagnik",
-    route: "alka-yagnik",
+    route: "2",
     bg: "assets/bg.webp",
     bgMobile: "assets/bg-mobile.webp",
     youtubeMusicUrl: "https://music.youtube.com/playlist?list=OLAK5uy_mC3mlANeMzHXt0NXx4n_Yt1ZZyZRM3AbA&si=9w767l3tdqa9yxbN"
@@ -60,7 +60,7 @@ const PLAYLISTS = [
   {
     id: "RDCLAK5uy_not6oaCYghpBvL86A9_e2hmsqwolSO3_s",
     name: "Kumar sanu",
-    route: "kumar-sanu",
+    route: "3",
     bg: "assets/bg.webp",
     bgMobile: "assets/bg-mobile.webp",
     youtubeMusicUrl: "https://music.youtube.com/playlist?list=RDCLAK5uy_not6oaCYghpBvL86A9_e2hmsqwolSO3_s&playnext=1&si=gekT1MJdWVWREsar"
@@ -68,7 +68,7 @@ const PLAYLISTS = [
   {
     id: "OLAK5uy_mzpVwrCgdSx1-g2_4TKUQ6kt8skWHDlB0",
     name: "Kishor Kumar",
-    route: "kishor-kumar",
+    route: "4",
     bg: "assets/bg.webp",
     bgMobile: "assets/bg-mobile.webp",
     youtubeMusicUrl: "https://music.youtube.com/playlist?list=OLAK5uy_mzpVwrCgdSx1-g2_4TKUQ6kt8skWHDlB0&si=0XnR3t7CG0ksdMF0"
@@ -144,7 +144,7 @@ const state = {
   metadataRetryTimer: null,
   queueIds: [],
   queueMeta: {},
-  playlistPopupOpen: false,
+  queueOpen: false,
   shuffleOn: false,
   consecutiveErrors: 0,
   hasLiked: false,
@@ -152,6 +152,8 @@ const state = {
   currentLikeRef: null,
   likeCountListener: null,
   firebaseApp: null,
+  manualLocation: null,
+  locationSearchOpen: false,
   currentPlaylistId: null,
   currentPlaylistIndex: 0,
   optionWheel: null,
@@ -194,12 +196,20 @@ const el = {};
 function cacheDom() {
   el.clock = document.getElementById("clock");
   el.weatherIcon = document.getElementById("weatherIcon");
+  el.locationName = document.getElementById("locationName");
+  el.locationChip = document.getElementById("locationChip");
+  el.locationSearchBackdrop = document.getElementById("locationSearchBackdrop");
+  el.locationSearchPanel = document.getElementById("locationSearchPanel");
+  el.locationSearchInput = document.getElementById("locationSearchInput");
+  el.locationSearchResults = document.getElementById("locationSearchResults");
+  el.locationSearchClose = document.getElementById("locationSearchClose");
   el.rainLayer = document.getElementById("rainLayer");
 
   el.likeBtn = document.getElementById("likeBtn");
   el.likeCount = document.getElementById("likeCount");
   el.onlinePill = document.getElementById("onlinePill");
   el.onlineCount = document.getElementById("onlineCount");
+  el.ytMusicLink = document.getElementById("ytMusicLink");
   el.instagramLink = document.getElementById("instagramLink");
   el.githubLink = document.getElementById("githubLink");
   el.heroTitle = document.getElementById("heroTitle");
@@ -215,27 +225,39 @@ function cacheDom() {
   el.stringBulbs = document.querySelector(".string-bulbs");
 
   el.player = document.getElementById("player");
+  el.artSwipeArea = document.getElementById("artSwipeArea");
   el.albumArt = document.getElementById("albumArt");
+  el.swipeHintLeft = document.getElementById("swipeHintLeft");
+  el.swipeHintRight = document.getElementById("swipeHintRight");
 
   el.trackTitle = document.getElementById("trackTitle");
+  el.trackSubtitle = document.getElementById("trackSubtitle");
   el.trackArtist = document.getElementById("trackArtist");
-  el.playingDots = document.getElementById("playingDots");
 
   el.currentTime = document.getElementById("currentTime");
   el.durationTime = document.getElementById("durationTime");
-  el.progressBar = document.getElementById("progressBar");
+  el.progressTrack = document.getElementById("progressTrack");
+  el.waveformBars = document.getElementById("waveformBars");
+  el.progressFillMask = document.getElementById("progressFillMask");
+  el.progressHandle = document.getElementById("progressHandle");
 
+  el.shuffleBtn = document.getElementById("shuffleBtn");
   el.prevBtn = document.getElementById("prevBtn");
   el.playBtn = document.getElementById("playBtn");
   el.nextBtn = document.getElementById("nextBtn");
   el.iconPlay = document.getElementById("iconPlay");
   el.iconPause = document.getElementById("iconPause");
 
-  el.playlistPopup = document.getElementById("playlistPopup");
-  el.playlistPopupBackdrop = document.getElementById("playlistPopupBackdrop");
-  el.playlistPopupCloseBtn = document.getElementById("playlistPopupCloseBtn");
-  el.playlistPopupList = document.getElementById("playlistPopupList");
-  el.playlistPopupTitle = document.getElementById("playlistPopupTitle");
+  el.queueBtn = document.getElementById("queueBtn");
+  el.queuePanel = document.getElementById("queuePanel");
+  el.queueBackdrop = document.getElementById("queueBackdrop");
+  el.queueCloseBtn = document.getElementById("queueCloseBtn");
+  el.queueHandle = document.getElementById("queueHandle");
+  el.queueList = document.getElementById("queueList");
+  el.queueSearchInput = document.getElementById("queueSearchInput");
+  el.queueSearchClear = document.getElementById("queueSearchClear");
+  el.queueSearchEmpty = document.getElementById("queueSearchEmpty");
+
 }
 
 
@@ -251,17 +273,18 @@ function initializeApp() {
   initOnlinePill();
   initPresence();
   initLikes();
-  initRouter();     // sets state.currentPlaylistIndex from URL pathname
+  initRouter();     // sets state.currentPlaylistIndex from URL hash
   initSidebar();    // builds left sidebar nav
   initWeather();
+  initLocationSearch();
   initBackgroundPhoto(); // uses current playlist's bg fields
   generateIllustration();
   generateWaveform();
   initControls();
   initProgressBarInteraction();
   initKeyboardControls();
-  initPlaylistPopup();
-  initFullscreen();
+  initQueue();
+  initArtSwipe();
   initMediaSession();
 
   showStatus("Loading playlist…", { loading: true });
@@ -436,13 +459,13 @@ function updateLikeButtonUI() {
 }
 
 /* ==========================================================================
-   6c-2. ROUTER — pathname-based playlist routing (/honey-singh, /alka-yagnik, …)
+   6c-2. ROUTER — hash-based playlist routing (#/1, #/2, …)
    ========================================================================== */
 
-function getRouteFromPath() {
-  // Strip leading slash, e.g. "/honey-singh" → "honey-singh"
-  const path = window.location.pathname.replace(/^\//, "").trim();
-  return path || null;
+function getRouteFromHash() {
+  // Supports both  #/1  and  #1  formats
+  const hash = window.location.hash.replace(/^#\/?/, "").trim();
+  return hash || null;
 }
 
 function resolvePlaylistFromRoute(route) {
@@ -453,16 +476,22 @@ function resolvePlaylistFromRoute(route) {
 
 function navigateToPlaylist(playlist, pushState) {
   if (!playlist) return;
-  const newPath = "/" + playlist.route;
+  const newHash = "#/" + playlist.route;
 
   if (pushState) {
-    if (window.location.pathname !== newPath) {
-      history.pushState({ route: playlist.route }, "", newPath);
+    // Setting the hash fires hashchange asynchronously, which calls this
+    // function again with pushState=false.  Return here so the actual
+    // playlist switch happens exactly once, from the hashchange handler.
+    if (window.location.hash !== newHash) {
+      window.location.hash = "/" + playlist.route;
+    } else {
+      // Hash is already correct (user re-clicked the active item) — run
+      // the switch directly since hashchange won't fire.
+      const index = PLAYLISTS.indexOf(playlist);
+      onPlaylistChange(index, playlist);
+      updateSidebarActiveItem(playlist.route);
+      switchPlaylistBackground(playlist);
     }
-    const index = PLAYLISTS.indexOf(playlist);
-    onPlaylistChange(index, playlist);
-    updateSidebarActiveItem(playlist.route);
-    switchPlaylistBackground(playlist);
     return;
   }
 
@@ -473,22 +502,23 @@ function navigateToPlaylist(playlist, pushState) {
 }
 
 function initRouter() {
-  // Redirect bare root URL to the first playlist route
-  if (window.location.pathname === "/" || window.location.pathname === "") {
-    history.replaceState({ route: PLAYLISTS[0].route }, "", "/" + PLAYLISTS[0].route);
+  // If no hash at all, redirect to first playlist
+  if (!window.location.hash || window.location.hash === "#" || window.location.hash === "#/") {
+    window.location.replace("#/" + PLAYLISTS[0].route);
   }
 
-  const route = getRouteFromPath();
+  const route = getRouteFromHash();
   const playlist = resolvePlaylistFromRoute(route);
   const index = PLAYLISTS.indexOf(playlist);
 
   state.currentPlaylistIndex = index;
   state.currentPlaylistId = playlist.id;
   CONFIG.playlistId = playlist.id;
+  CONFIG.youtubeMusicUrl = playlist.youtubeMusicUrl || "";
 
   // Listen for back/forward navigation
-  window.addEventListener("popstate", () => {
-    const r = getRouteFromPath();
+  window.addEventListener("hashchange", () => {
+    const r = getRouteFromHash();
     const p = resolvePlaylistFromRoute(r);
     navigateToPlaylist(p, false);
   });
@@ -507,12 +537,12 @@ function initSidebar() {
   const backdrop = document.getElementById("sidebarBackdrop");
   if (!list || !toggle || !backdrop) return;
 
+  // Build list items
   PLAYLISTS.forEach((playlist, idx) => {
     const btn = document.createElement("button");
     btn.className = "sidebar-item";
     btn.setAttribute("data-route", playlist.route);
     btn.setAttribute("aria-label", "Playlist " + playlist.name);
-    btn.style.setProperty("--stagger-index", String(idx));
     btn.innerHTML = `
       <span class="sidebar-item-num">${playlist.name}</span>
       <span class="sidebar-item-label">Playlist ${playlist.name}</span>
@@ -595,10 +625,10 @@ function onPlaylistChange(index, playlist) {
   state.consecutiveErrors = 0;
   state.queueIds = [];
   state.queueMeta = {};
-  if (el.playlistPopupList) el.playlistPopupList.replaceChildren();
+  if (el.queueList) el.queueList.replaceChildren();
 
   // Force-stop the current track so the old audio definitely ends.
-  try { state.player.stopVideo(); } catch (e) { }
+  try { state.player.stopVideo(); } catch (e) {}
 
   // Give the player a brief moment to settle after stopping before we
   // ask it to load a completely new playlist context.
@@ -625,7 +655,7 @@ function onPlaylistChange(index, playlist) {
     // Nudge playVideo after the playlist has had time to queue up.
     setTimeout(() => {
       if (state.playlistSwitchToken !== switchToken) return;
-      try { state.player.playVideo(); } catch (err) { }
+      try { state.player.playVideo(); } catch (err) {}
     }, 600);
   }, 200);
 
@@ -744,18 +774,17 @@ function fetchWeather(lat, lon, knownName) {
     .then((data) => {
       const id = data.weather && data.weather[0] ? data.weather[0].id : 800;
       const isNight = data.weather && data.weather[0] ? data.weather[0].icon.endsWith("n") : false;
-      const desc = data.weather && data.weather[0] ? data.weather[0].description : "";
-      const temp = data.main ? Math.round(data.main.temp) : null;
-      const tooltip = (knownName || data.name || "") + (temp !== null ? ` (${temp}°C, ${desc})` : ` (${desc})`);
+      const cityName = knownName || data.name || CONFIG.fallbackLocationName;
 
-      if (el.weatherIcon) {
-        el.weatherIcon.textContent = weatherIconFor(id, isNight);
-        el.weatherIcon.title = tooltip;
-      }
+      el.locationName.textContent = cityName;
+      el.weatherIcon.textContent = weatherIconFor(id, isNight);
+      el.weatherIcon.title = data.weather && data.weather[0] ? data.weather[0].description : "";
+
       toggleRain(isRainyCondition(id));
     })
     .catch((err) => {
       console.warn("[weather] Could not fetch weather:", err.message);
+      el.locationName.textContent = knownName || CONFIG.fallbackLocationName;
     });
 }
 
@@ -786,7 +815,101 @@ function buildRain() {
   el.rainLayer.appendChild(frag);
 }
 
+/* ==========================================================================
+   6e. LOCATION SEARCH — pick weather for any place, by name
+   ========================================================================== */
 
+function initLocationSearch() {
+  if (!el.locationChip || !el.locationSearchPanel) return;
+
+  el.locationChip.addEventListener("click", openLocationSearch);
+  el.locationSearchClose.addEventListener("click", closeLocationSearch);
+  el.locationSearchBackdrop.addEventListener("click", closeLocationSearch);
+
+  let debounceTimer = null;
+  el.locationSearchInput.addEventListener("input", () => {
+    clearTimeout(debounceTimer);
+    const query = el.locationSearchInput.value.trim();
+    if (query.length < 2) {
+      el.locationSearchResults.innerHTML = "";
+      return;
+    }
+    debounceTimer = setTimeout(() => runLocationSearch(query), 350);
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && state.locationSearchOpen) closeLocationSearch();
+  });
+}
+
+function openLocationSearch() {
+  state.locationSearchOpen = true;
+  el.locationSearchPanel.classList.add("is-open");
+  el.locationSearchBackdrop.classList.add("is-open");
+  el.locationSearchPanel.setAttribute("aria-hidden", "false");
+  el.locationChip.setAttribute("aria-expanded", "true");
+  el.locationSearchInput.value = "";
+  el.locationSearchResults.innerHTML = "";
+  setTimeout(() => el.locationSearchInput.focus(), 50);
+}
+
+function closeLocationSearch() {
+  state.locationSearchOpen = false;
+  el.locationSearchPanel.classList.remove("is-open");
+  el.locationSearchBackdrop.classList.remove("is-open");
+  el.locationSearchPanel.setAttribute("aria-hidden", "true");
+  el.locationChip.setAttribute("aria-expanded", "false");
+}
+
+function geocodeSearch(query) {
+  const url = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=6&appid=${CONFIG.weatherApiKey}`;
+  return fetch(url)
+    .then((res) => (res.ok ? res.json() : []))
+    .catch(() => []);
+}
+
+function runLocationSearch(query) {
+  el.locationSearchResults.innerHTML = `<li class="location-result-status">Searching…</li>`;
+
+  geocodeSearch(query).then((results) => {
+    // The panel may have been closed, or the input changed, while this was
+    // in flight — only render if it's still the latest query in the box.
+    if (el.locationSearchInput.value.trim() !== query) return;
+
+    if (!Array.isArray(results) || results.length === 0) {
+      el.locationSearchResults.innerHTML = `<li class="location-result-status">No matches found.</li>`;
+      return;
+    }
+
+    el.locationSearchResults.innerHTML = "";
+    results.forEach((place) => {
+      const label = [place.name, place.state, place.country].filter(Boolean).join(", ");
+      const li = document.createElement("li");
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "location-result-row";
+      btn.textContent = label;
+      btn.addEventListener("click", () => selectSearchedLocation(place, label));
+      li.appendChild(btn);
+      el.locationSearchResults.appendChild(li);
+    });
+  });
+}
+
+function selectSearchedLocation(place, label) {
+  const displayName = place.name || label;
+  state.manualLocation = { lat: place.lat, lon: place.lon, name: displayName };
+
+  try {
+    localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(state.manualLocation));
+  } catch (err) {
+    /* localStorage unavailable — the choice just won't persist across reloads */
+  }
+
+  fetchWeather(place.lat, place.lon, displayName);
+  closeLocationSearch();
+  showToast(`Weather set to ${displayName}`);
+}
 
 /* ==========================================================================
    7. HERO TITLE
@@ -808,27 +931,21 @@ function initHeroTitle() {
    8. BACKGROUND — static photo + procedural illustration
    ========================================================================== */
 
-let bgSlideshowTimer = null;
-let currentBgIndex = 0;
-
-function getPlaylistBgs(playlist, isMobileVP) {
-  if (!playlist) return [];
-  const val = isMobileVP ? (playlist.bgMobile || playlist.bg) : playlist.bg;
-  if (!val) return [];
-  return Array.isArray(val) ? val : [val];
-}
-
+/* Resolves desktop + mobile background from current playlist's config,
+   falling back to CONFIG values if the playlist doesn't define its own. */
 function getCurrentPlaylistBg(isMobileVP) {
   const playlist = PLAYLISTS[state.currentPlaylistIndex] || PLAYLISTS[0];
-  const bgs = getPlaylistBgs(playlist, isMobileVP);
-  if (bgs.length === 0) return "";
-  return bgs[currentBgIndex % bgs.length];
+  if (isMobileVP) {
+    return playlist.bgMobile || playlist.bg || CONFIG.backgroundImageMobile || CONFIG.backgroundImage || "";
+  }
+  return playlist.bg || CONFIG.backgroundImage || "";
 }
 
 const _mobileQuery = window.matchMedia("(max-width: 620px)");
 
 function loadBgInto(targetEl, src) {
   if (!src || !targetEl) return;
+  // If already showing this exact image, skip the decode round-trip
   if (targetEl.dataset.loadedSrc === src) {
     targetEl.classList.add("is-visible");
     return;
@@ -845,40 +962,13 @@ function loadBgInto(targetEl, src) {
   img.src = src;
 }
 
-function startBgSlideshow() {
-  clearTimeout(bgSlideshowTimer);
-  const playlist = PLAYLISTS[state.currentPlaylistIndex];
-  if (!playlist) return;
-  const useMobile = _mobileQuery.matches;
-  const bgs = getPlaylistBgs(playlist, useMobile);
-  if (bgs.length <= 1) return;
-
-  bgSlideshowTimer = setTimeout(() => {
-    currentBgIndex++;
-    const targetEl = useMobile ? el.bgPhotoMobile : el.bgPhoto;
-    if (targetEl) {
-      targetEl.style.transition = "opacity 1.5s ease-in-out";
-      targetEl.style.opacity = "0";
-      setTimeout(() => {
-        const nextSrc = getCurrentPlaylistBg(useMobile);
-        targetEl.style.backgroundImage = `url("${nextSrc}")`;
-        targetEl.style.opacity = "1";
-        startBgSlideshow();
-      }, 1500);
-    } else {
-      startBgSlideshow();
-    }
-  }, 12000);
-}
-
 function applyBackgroundForViewport() {
   const useMobile = _mobileQuery.matches;
   const src = getCurrentPlaylistBg(useMobile);
   const targetEl = useMobile ? el.bgPhotoMobile : el.bgPhoto;
-  const otherEl = useMobile ? el.bgPhoto : el.bgPhotoMobile;
+  const otherEl  = useMobile ? el.bgPhoto : el.bgPhotoMobile;
   if (otherEl) otherEl.classList.remove("is-visible");
   loadBgInto(targetEl, src);
-  startBgSlideshow();
 }
 
 function initBackgroundPhoto() {
@@ -887,12 +977,12 @@ function initBackgroundPhoto() {
 }
 
 function switchPlaylistBackground(playlist) {
-  clearTimeout(bgSlideshowTimer);
-  currentBgIndex = 0;
+  // Update CONFIG for any legacy callers, then reload bg
   if (playlist) {
     CONFIG.backgroundImage = playlist.bg || CONFIG.backgroundImage;
     CONFIG.backgroundImageMobile = playlist.bgMobile || playlist.bg || CONFIG.backgroundImageMobile;
   }
+  // Brief fade-out then fade-in via CSS transitions on .bg-photo
   [el.bgPhoto, el.bgPhotoMobile].forEach((ph) => {
     if (ph) ph.style.opacity = "0";
   });
@@ -1154,7 +1244,7 @@ function handlePlayerReady(event) {
 
   hideStatus();
   refreshMetadataWithRetry();
-  buildPlaylistPopupList(playlist);
+  buildQueueList(playlist);
 
   if (CONFIG.autoplay) {
     state.player.playVideo();
@@ -1180,9 +1270,9 @@ function handlePlayerStateChange(event) {
 
       const currentPlaylist = state.player && state.player.getPlaylist ? state.player.getPlaylist() : null;
       if (currentPlaylist && currentPlaylist.length > 0 && (state.queueIds.length === 0 || state.queueIds[0] !== currentPlaylist[0])) {
-        buildPlaylistPopupList(currentPlaylist);
+        buildQueueList(currentPlaylist);
       } else {
-        highlightCurrentPlaylistRow();
+        highlightCurrentQueueRow();
       }
       hideStatus();
       break;
@@ -1206,7 +1296,7 @@ function handlePlayerStateChange(event) {
       stopProgressLoop();
       stopWaveformPulse();
       updateMediaSessionPlaybackState(false);
-      highlightCurrentPlaylistRow();
+      highlightCurrentQueueRow();
       break;
 
     case YTState.BUFFERING:
@@ -1220,7 +1310,7 @@ function handlePlayerStateChange(event) {
       refreshMetadataWithRetry();
       const cuedPlaylist = state.player && state.player.getPlaylist ? state.player.getPlaylist() : null;
       if (cuedPlaylist && cuedPlaylist.length > 0 && (state.queueIds.length === 0 || state.queueIds[0] !== cuedPlaylist[0])) {
-        buildPlaylistPopupList(cuedPlaylist);
+        buildQueueList(cuedPlaylist);
       }
       break;
 
@@ -1327,6 +1417,9 @@ function updateSongMetadata(data) {
     el.trackTitle.textContent = title;
     el.trackTitle.title = data.title || "";
   }
+  if (el.trackSubtitle) {
+    el.trackSubtitle.textContent = subtitle;
+  }
   if (el.trackArtist) {
     el.trackArtist.textContent = author;
   }
@@ -1337,8 +1430,8 @@ function updateSongMetadata(data) {
   updateMediaSessionMetadata(fullTitle, author, data.video_id);
 
   state.queueMeta[data.video_id] = { title: fullTitle, author: author || "Unknown artist" };
-  refreshPlaylistPopupRow(data.video_id);
-  highlightCurrentPlaylistRow();
+  refreshQueueRow(data.video_id);
+  highlightCurrentQueueRow();
 }
 
 /* ==========================================================================
@@ -1586,31 +1679,120 @@ function updateProgress() {
 
 function paintProgress(current, duration) {
   const pct = duration > 0 ? (current / duration) * 100 : 0;
-  if (el.progressBar && !state.isDraggingProgress) {
-    el.progressBar.value = pct;
-    el.progressBar.style.background = `linear-gradient(to right, #e3a94c 0%, #e3a94c ${pct}%, rgba(255,255,255,0.15) ${pct}%, rgba(255,255,255,0.15) 100%)`;
-  }
-  if (el.currentTime) el.currentTime.textContent = formatTime(current);
-  if (el.durationTime) el.durationTime.textContent = formatTime(duration);
+  el.progressFillMask.style.width = `${pct}%`;
+  el.progressHandle.style.left = `${pct}%`;
+  el.currentTime.textContent = formatTime(current);
+  el.durationTime.textContent = formatTime(duration);
+  el.progressTrack.setAttribute("aria-valuenow", Math.round(pct));
 }
 
 function initProgressBarInteraction() {
-  if (!el.progressBar) return;
-  state.isDraggingProgress = false;
+  let dragging = false;
+  let activePointerId = null;
 
-  el.progressBar.addEventListener("input", (e) => {
-    state.isDraggingProgress = true;
-    const pct = parseFloat(e.target.value);
+  function getClientX(e) {
+    if (e.touches && e.touches.length > 0) return e.touches[0].clientX;
+    if (e.changedTouches && e.changedTouches.length > 0) return e.changedTouches[0].clientX;
+    if (typeof e.clientX === "number") return e.clientX;
+    return null;
+  }
+
+  function fractionFromEvent(e) {
+    const rect = el.progressTrack.getBoundingClientRect();
+    const clientX = getClientX(e);
+    if (clientX === null || rect.width <= 0) return 0;
+    const x = clientX - rect.left;
+    return Math.max(0, Math.min(1, x / rect.width));
+  }
+
+  function handleStart(e) {
     const duration = getActiveDuration();
-    const current = (pct / 100) * duration;
-    if (el.currentTime) el.currentTime.textContent = formatTime(current);
-    el.progressBar.style.background = `linear-gradient(to right, #e3a94c 0%, #e3a94c ${pct}%, rgba(255,255,255,0.15) ${pct}%, rgba(255,255,255,0.15) 100%)`;
-  });
+    if (!duration || duration <= 0) return;
+    dragging = true;
+    state.isSeeking = true;
+    const fraction = fractionFromEvent(e);
+    paintProgress(fraction * duration, duration);
 
-  el.progressBar.addEventListener("change", (e) => {
-    state.isDraggingProgress = false;
-    const pct = parseFloat(e.target.value);
-    seekTo(pct / 100, true);
+    if (e.pointerId != null && el.progressTrack.setPointerCapture) {
+      try {
+        activePointerId = e.pointerId;
+        el.progressTrack.setPointerCapture(e.pointerId);
+      } catch (err) {}
+    }
+  }
+
+  function handleMove(e) {
+    if (!dragging) return;
+    const duration = getActiveDuration();
+    if (!duration || duration <= 0) return;
+    if (e.cancelable && e.type.startsWith("touch")) {
+      e.preventDefault();
+    }
+    const fraction = fractionFromEvent(e);
+    paintProgress(fraction * duration, duration);
+  }
+
+  function handleEnd(e) {
+    if (!dragging) return;
+    dragging = false;
+    const fraction = fractionFromEvent(e);
+    seekTo(fraction, true);
+
+    if (activePointerId != null && el.progressTrack.releasePointerCapture) {
+      try {
+        el.progressTrack.releasePointerCapture(activePointerId);
+      } catch (err) {}
+      activePointerId = null;
+    }
+  }
+
+  // Pointer Events (Unified touch, mouse, and stylus for modern mobile & desktop)
+  if (window.PointerEvent) {
+    el.progressTrack.addEventListener("pointerdown", handleStart);
+    window.addEventListener("pointermove", (e) => {
+      if (dragging) handleMove(e);
+    });
+    window.addEventListener("pointerup", (e) => {
+      if (dragging) handleEnd(e);
+    });
+    window.addEventListener("pointercancel", (e) => {
+      if (dragging) handleEnd(e);
+    });
+  } else {
+    // Touch fallback for older WebViews
+    el.progressTrack.addEventListener("touchstart", handleStart, { passive: true });
+    window.addEventListener("touchmove", (e) => {
+      if (dragging) handleMove(e);
+    }, { passive: false });
+    window.addEventListener("touchend", (e) => {
+      if (dragging) handleEnd(e);
+    }, { passive: true });
+    window.addEventListener("touchcancel", (e) => {
+      if (dragging) handleEnd(e);
+    }, { passive: true });
+
+    // Mouse fallback
+    el.progressTrack.addEventListener("mousedown", handleStart);
+    window.addEventListener("mousemove", (e) => {
+      if (dragging) handleMove(e);
+    });
+    window.addEventListener("mouseup", (e) => {
+      if (dragging) handleEnd(e);
+    });
+  }
+
+  // Keyboard controls
+  el.progressTrack.addEventListener("keydown", (e) => {
+    const duration = getActiveDuration();
+    if (!duration || duration <= 0) return;
+    const cur = (state.player && state.player.getCurrentTime && state.player.getCurrentTime()) || 0;
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      seekTo(Math.min(duration, cur + 5));
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      seekTo(Math.max(0, cur - 5));
+    }
   });
 }
 
@@ -1664,50 +1846,136 @@ function initArtSwipe() {
 }
 
 /* ==========================================================================
-   14b. PLAYLIST POPUP MODAL
+   14b. QUEUE DRAWER — swipeable "up next" panel
    ========================================================================== */
 
-function initPlaylistPopup() {
-  const triggerElements = [
-    document.getElementById("coverContainer"),
-    document.getElementById("trackMetaText"),
-    document.getElementById("playlistPopupBtn")
-  ];
-
-  triggerElements.forEach(trigger => {
-    if (trigger) trigger.addEventListener("click", togglePlaylistPopup);
-  });
-
-  if (el.playlistPopupCloseBtn) {
-    el.playlistPopupCloseBtn.addEventListener("click", closePlaylistPopup);
-  }
-  if (el.playlistPopupBackdrop) {
-    el.playlistPopupBackdrop.addEventListener("click", closePlaylistPopup);
-  }
+function initQueue() {
+  el.queueBtn.addEventListener("click", toggleQueue);
+  el.queueCloseBtn.addEventListener("click", closeQueue);
+  el.queueBackdrop.addEventListener("click", closeQueue);
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && state.playlistPopupOpen) closePlaylistPopup();
+    if (e.key === "Escape" && state.queueOpen) closeQueue();
+  });
+
+  initQueueSwipeToClose();
+  initQueueSearch();
+}
+
+// Filters the already-rendered queue rows by song title, artist/channel, and
+// (when present in the title text itself, e.g. `From "Movie Name"`) the
+// movie/album name. YouTube/oEmbed don't expose a separate movie or year
+// field, so a year only matches if it's literally printed in the title.
+function initQueueSearch() {
+  el.queueSearchInput.addEventListener("input", () => {
+    const query = el.queueSearchInput.value.trim().toLowerCase();
+    el.queueSearchClear.style.display = query ? "flex" : "none";
+    filterQueueRows(query);
+  });
+
+  el.queueSearchClear.addEventListener("click", () => {
+    el.queueSearchInput.value = "";
+    el.queueSearchClear.style.display = "none";
+    filterQueueRows("");
+    el.queueSearchInput.focus();
   });
 }
 
-function togglePlaylistPopup() {
-  if (state.playlistPopupOpen) closePlaylistPopup();
-  else openPlaylistPopup();
+function filterQueueRows(query) {
+  const items = el.queueList.querySelectorAll(".queue-list-item");
+  let visibleCount = 0;
+
+  items.forEach((item) => {
+    const row = item.querySelector(".queue-row");
+    const videoId = row.dataset.videoId;
+    const meta = state.queueMeta[videoId];
+    const haystack = meta ? `${meta.title} ${meta.author}`.toLowerCase() : "";
+
+    const matches = !query || haystack.includes(query);
+    item.classList.toggle("is-filtered-out", !matches);
+    if (matches) visibleCount += 1;
+  });
+
+  el.queueSearchEmpty.style.display = visibleCount === 0 ? "block" : "none";
 }
 
-function openPlaylistPopup() {
-  state.playlistPopupOpen = true;
-  if (el.playlistPopup) el.playlistPopup.classList.add("is-open");
-  if (el.playlistPopupBackdrop) el.playlistPopupBackdrop.classList.add("is-open");
-  if (el.playlistPopup) el.playlistPopup.setAttribute("aria-hidden", "false");
-  highlightCurrentPlaylistRow(true);
+function toggleQueue() {
+  if (state.queueOpen) closeQueue();
+  else openQueue();
 }
 
-function closePlaylistPopup() {
-  state.playlistPopupOpen = false;
-  if (el.playlistPopup) el.playlistPopup.classList.remove("is-open");
-  if (el.playlistPopupBackdrop) el.playlistPopupBackdrop.classList.remove("is-open");
-  if (el.playlistPopup) el.playlistPopup.setAttribute("aria-hidden", "true");
+function openQueue() {
+  state.queueOpen = true;
+  el.queuePanel.classList.add("is-open");
+  el.queueBackdrop.classList.add("is-open");
+  el.queuePanel.setAttribute("aria-hidden", "false");
+  el.queueBtn.classList.add("is-active");
+  el.queueBtn.setAttribute("aria-expanded", "true");
+  highlightCurrentQueueRow(true);
+}
+
+function closeQueue() {
+  state.queueOpen = false;
+  el.queuePanel.classList.remove("is-open");
+  el.queuePanel.style.transform = "";
+  el.queueBackdrop.classList.remove("is-open");
+
+  // aria-hidden can't be applied to an element that still contains focus
+  // (the browser blocks it and logs a console violation) — this happens
+  // whenever the queue is closed by clicking a queue-row itself, e.g. from
+  // playQueueIndex(). Move focus back to the toggle button first so the
+  // panel can be safely hidden from assistive tech.
+  if (el.queuePanel.contains(document.activeElement)) {
+    el.queueBtn.focus();
+  }
+
+  el.queuePanel.setAttribute("aria-hidden", "true");
+  el.queueBtn.classList.remove("is-active");
+  el.queueBtn.setAttribute("aria-expanded", "false");
+
+  if (el.queueSearchInput && el.queueSearchInput.value) {
+    el.queueSearchInput.value = "";
+    el.queueSearchClear.style.display = "none";
+    filterQueueRows("");
+  }
+}
+
+function initQueueSwipeToClose() {
+  let startY = 0;
+  let currentY = 0;
+  let dragging = false;
+
+  function onDown(e) {
+    dragging = true;
+    startY = e.touches ? e.touches[0].clientY : e.clientY;
+    el.queuePanel.style.transition = "none";
+  }
+
+  function onMove(e) {
+    if (!dragging) return;
+    currentY = (e.touches ? e.touches[0].clientY : e.clientY) - startY;
+    if (currentY < 0) currentY = 0;
+    el.queuePanel.style.transform = `translate(-50%, ${currentY}px)`;
+  }
+
+  function onUp() {
+    if (!dragging) return;
+    dragging = false;
+    el.queuePanel.style.transition = "";
+    if (currentY > 90) {
+      closeQueue();
+    } else {
+      el.queuePanel.style.transform = "";
+    }
+    currentY = 0;
+  }
+
+  [el.queueHandle, el.queueList.parentElement.querySelector(".queue-header")].forEach((handle) => {
+    if (!handle) return;
+    handle.addEventListener("pointerdown", onDown);
+  });
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp);
 }
 
 function runWithConcurrency(items, limit, worker) {
@@ -1750,140 +2018,115 @@ function fetchOEmbedMeta(videoId) {
       state.queueMeta[videoId] = { title: "Unavailable video", author: "" };
     })
     .then(() => {
-      refreshPlaylistPopupRow(videoId);
+      refreshQueueRow(videoId);
     });
 }
 
-function buildPlaylistPopupList(playlistIds) {
+function buildQueueList(playlistIds) {
   state.queueIds = playlistIds.slice();
-  if (!el.playlistPopupList) return;
-  el.playlistPopupList.innerHTML = "";
+  el.queueList.innerHTML = "";
 
   playlistIds.forEach((videoId, index) => {
     const li = document.createElement("li");
-    li.className = "playlist-popup-item";
+    li.className = "queue-list-item";
 
     const row = document.createElement("button");
     row.type = "button";
-    row.className = "playlist-popup-row";
+    row.className = "queue-row";
     row.dataset.videoId = videoId;
     row.dataset.index = String(index);
     row.setAttribute("aria-label", `Play track ${index + 1}`);
-    row.addEventListener("click", () => playPopupIndex(index));
+    row.addEventListener("click", () => playQueueIndex(index));
+
+    const indexLabel = document.createElement("span");
+    indexLabel.className = "queue-row-index";
 
     const numSpan = document.createElement("span");
-    numSpan.className = "playlist-row-num";
+    numSpan.className = "eq-num";
     numSpan.textContent = String(index + 1);
 
-    const textDiv = document.createElement("div");
-    textDiv.className = "playlist-row-text";
+    const eqBars = document.createElement("span");
+    eqBars.className = "eq-bars";
+    eqBars.setAttribute("aria-hidden", "true");
+    eqBars.appendChild(document.createElement("span"));
+    eqBars.appendChild(document.createElement("span"));
+    eqBars.appendChild(document.createElement("span"));
 
-    const titleSpan = document.createElement("span");
-    titleSpan.className = "playlist-row-title";
-    titleSpan.textContent = "Loading…";
+    indexLabel.appendChild(numSpan);
+    indexLabel.appendChild(eqBars);
 
-    const artistSpan = document.createElement("span");
-    artistSpan.className = "playlist-row-artist";
-    artistSpan.textContent = "";
+    const thumb = document.createElement("img");
+    thumb.className = "queue-row-thumb";
+    thumb.alt = "";
+    thumb.loading = "lazy";
 
-    textDiv.appendChild(titleSpan);
-    textDiv.appendChild(artistSpan);
+    const text = document.createElement("span");
+    text.className = "queue-row-text";
+    const titleEl = document.createElement("span");
+    titleEl.className = "queue-row-title";
+    titleEl.textContent = "Loading…";
+    const artistEl = document.createElement("span");
+    artistEl.className = "queue-row-artist";
+    text.appendChild(titleEl);
+    text.appendChild(document.createElement("br"));
+    text.appendChild(artistEl);
 
-    row.appendChild(numSpan);
-    row.appendChild(textDiv);
+    row.appendChild(indexLabel);
+    row.appendChild(thumb);
+    row.appendChild(text);
     li.appendChild(row);
-    el.playlistPopupList.appendChild(li);
+    el.queueList.appendChild(li);
+
+    loadBestThumbnail(videoId, (url) => {
+      thumb.src = url;
+    });
   });
 
   const unknownIds = playlistIds.filter((id) => !state.queueMeta[id]);
   runWithConcurrency(unknownIds, 4, fetchOEmbedMeta);
 
-  highlightCurrentPlaylistRow();
+  highlightCurrentQueueRow();
 }
 
-function refreshPlaylistPopupRow(videoId) {
+function refreshQueueRow(videoId) {
   const meta = state.queueMeta[videoId];
-  if (!meta || !el.playlistPopupList) return;
-  const row = el.playlistPopupList.querySelector(`.playlist-popup-row[data-video-id="${cssEscape(videoId)}"]`);
+  if (!meta) return;
+  const row = el.queueList.querySelector(`.queue-row[data-video-id="${cssEscape(videoId)}"]`);
   if (!row) return;
-  const titleEl = row.querySelector(".playlist-row-title");
-  const artistEl = row.querySelector(".playlist-row-artist");
+  const titleEl = row.querySelector(".queue-row-title");
+  const artistEl = row.querySelector(".queue-row-artist");
   if (titleEl) titleEl.textContent = meta.title;
   if (artistEl) artistEl.textContent = meta.author;
+
+  // Metadata for this row may have just arrived after the user already
+  // typed a search — re-check it against the active query if there is one.
+  if (el.queueSearchInput && el.queueSearchInput.value.trim()) {
+    filterQueueRows(el.queueSearchInput.value.trim().toLowerCase());
+  }
 }
 
-function highlightCurrentPlaylistRow(scrollIntoView) {
-  if (!state.player || !state.player.getPlaylistIndex || !el.playlistPopupList) return;
+function highlightCurrentQueueRow(scrollIntoView) {
+  if (!state.player || !state.player.getPlaylistIndex) return;
   const currentIndex = state.player.getPlaylistIndex();
-  const rows = el.playlistPopupList.querySelectorAll(".playlist-popup-row");
+  const rows = el.queueList.querySelectorAll(".queue-row");
   rows.forEach((row) => {
     const isCurrent = Number(row.dataset.index) === currentIndex;
     row.classList.toggle("is-current", isCurrent);
     row.classList.toggle("is-paused", isCurrent && !state.isPlaying);
     if (isCurrent && scrollIntoView) {
-      row.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      row.scrollIntoView({ block: "nearest" });
     }
   });
 }
 
-function playPopupIndex(index) {
+function playQueueIndex(index) {
   if (!state.player || !state.player.playVideoAt) return;
   state.player.playVideoAt(index);
-  closePlaylistPopup();
+  closeQueue();
 }
 
 function cssEscape(value) {
   return window.CSS && CSS.escape ? CSS.escape(value) : String(value).replace(/["\\]/g, "\\$&");
-}
-
-/* ==========================================================================
-   14c. FULLSCREEN MODE
-   ========================================================================== */
-
-function initFullscreen() {
-  const btn = document.getElementById("fullscreenBtn");
-  if (!btn) return;
-
-  function updateIcon() {
-    const inFs = !!(
-      document.fullscreenElement ||
-      document.webkitFullscreenElement ||
-      document.mozFullScreenElement
-    );
-    btn.setAttribute("aria-label", inFs ? "Exit fullscreen" : "Enter fullscreen");
-    btn.title = inFs ? "Exit fullscreen" : "Fullscreen";
-    btn.classList.toggle("is-fullscreen", inFs);
-  }
-
-  btn.addEventListener("click", () => {
-    try {
-      if (
-        document.fullscreenElement ||
-        document.webkitFullscreenElement ||
-        document.mozFullScreenElement
-      ) {
-        (
-          document.exitFullscreen ||
-          document.webkitExitFullscreen ||
-          document.mozCancelFullScreen
-        ).call(document);
-      } else {
-        const el_ = document.documentElement;
-        (
-          el_.requestFullscreen ||
-          el_.webkitRequestFullscreen ||
-          el_.mozRequestFullScreen
-        ).call(el_);
-      }
-    } catch (e) {
-      console.warn("[fullscreen] Not supported:", e.message);
-    }
-  });
-
-  document.addEventListener("fullscreenchange", updateIcon);
-  document.addEventListener("webkitfullscreenchange", updateIcon);
-  document.addEventListener("mozfullscreenchange", updateIcon);
-  updateIcon();
 }
 
 /* ==========================================================================

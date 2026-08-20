@@ -1,7 +1,6 @@
 {
   "rewrites": [
-    { "source": "/config.js", "destination": "/api/config" },
-    { "source": "/((?!api|assets|static|favicon).*|$)", "destination": "/index.html" }
+    { "source": "/config.js", "destination": "/api/config" }
   ],
   "headers": [
     {
